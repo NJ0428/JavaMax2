@@ -72,6 +72,7 @@ public class GameSelectPanel extends JPanel {
                     buttonHeight);
 
             button.addActionListener(e -> {
+                gameFrame.getAudioManager().playClickSound();
                 selectMode(mode);
                 // 싱글 플레이는 바로 노래 선택 화면으로 이동
                 if (mode == GameMode.SINGLE_PLAY) {
@@ -85,6 +86,7 @@ public class GameSelectPanel extends JPanel {
                         updateButtonAppearance(index, true);
                     }
                     showModeDescription(mode);
+                    gameFrame.getAudioManager().playClickSound();
                 }
 
                 @Override
@@ -156,7 +158,10 @@ public class GameSelectPanel extends JPanel {
     private void createBottomButtons() {
         // 뒤로가기 버튼
         JButton backButton = createBottomButton("뒤로가기", 50);
-        backButton.addActionListener(e -> gameFrame.returnToMenu());
+        backButton.addActionListener(e -> {
+            gameFrame.getAudioManager().playClickSound();
+            gameFrame.returnToMenu();
+        });
         add(backButton);
     }
 
@@ -177,6 +182,7 @@ public class GameSelectPanel extends JPanel {
             @Override
             public void mouseEntered(MouseEvent e) {
                 button.setBackground(new Color(120, 120, 170));
+                gameFrame.getAudioManager().playClickSound();
             }
 
             @Override

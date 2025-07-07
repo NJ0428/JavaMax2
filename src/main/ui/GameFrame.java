@@ -38,6 +38,9 @@ public class GameFrame extends JFrame implements KeyListener {
         addKeyListener(this);
         setFocusable(true);
         requestFocus();
+
+        // GameEngine에 AudioManager 설정
+        gameEngine.setAudioManager(getAudioManager());
     }
 
     /**
@@ -291,6 +294,13 @@ public class GameFrame extends JFrame implements KeyListener {
 
     public GameEngine getGameEngine() {
         return gameEngine;
+    }
+
+    /**
+     * AudioManager를 반환합니다
+     */
+    public main.audio.AudioManager getAudioManager() {
+        return RhythmGame.getInstance().getAudioManager();
     }
 
     // KeyListener 구현

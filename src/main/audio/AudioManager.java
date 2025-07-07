@@ -18,6 +18,7 @@ public class AudioManager {
     private boolean musicEnabled;
     private float soundVolume;
     private float musicVolume;
+    private Mp3Player mp3Player; // MP3 재생을 위한 플레이어
 
     public AudioManager() {
         soundEffects = new HashMap<>();
@@ -25,6 +26,7 @@ public class AudioManager {
         musicEnabled = true;
         soundVolume = 1.0f; // 최대 볼륨으로 설정
         musicVolume = 0.7f;
+        mp3Player = new Mp3Player();
 
         System.out.println("=== AudioManager 초기화 시작 ===");
         loadSoundEffects();
@@ -58,11 +60,14 @@ public class AudioManager {
      * 효과음을 미리 로드합니다
      */
     private void loadSoundEffects() {
-        // 기본 효과음 파일들 (실제 파일이 없어도 오류 방지)
+        // 기본 효과음 파일들 (WAV 파일)
         loadSoundEffect("hit", Constants.EFFECT_PATH + "hit.wav");
         loadSoundEffect("miss", Constants.EFFECT_PATH + "miss.wav");
         loadSoundEffect("perfect", Constants.EFFECT_PATH + "perfect.wav");
         loadSoundEffect("click", Constants.EFFECT_PATH + "click.wav");
+
+        // MP3 파일들을 Mp3Player에 등록
+        registerMp3Sounds();
 
         // UI 관련 효과음
         loadSoundEffect("pause", Constants.EFFECT_PATH + "pause.wav");
@@ -75,6 +80,38 @@ public class AudioManager {
     }
 
     /**
+     * MP3 파일들을 Mp3Player에 등록합니다
+     */
+    private void registerMp3Sounds() {
+        // 새로운 이펙트 사운드들 (MP3 파일)
+        registerMp3Sound("Click", Constants.EFFECT_PATH + "Click.mp3");
+        registerMp3Sound("FarmUp", Constants.EFFECT_PATH + "FarmUp.mp3");
+        registerMp3Sound("Over", Constants.EFFECT_PATH + "Over.mp3");
+        registerMp3Sound("success", Constants.EFFECT_PATH + "success.mp3");
+        registerMp3Sound("Touch", Constants.EFFECT_PATH + "Touch.mp3");
+    }
+
+    /**
+     * MP3 파일을 등록합니다
+     */
+    private void registerMp3Sound(String name, String filePath) {
+        File soundFile = new File(filePath);
+        if (soundFile.exists()) {
+            mp3Player.registerSound(name, filePath);
+            System.out.println("MP3 사운드 등록 완료: " + name);
+        } else {
+            System.err.println("MP3 파일을 찾을 수 없음: " + filePath);
+            // 대체 사운드 생성
+            Clip clip = generateSoundEffect(name);
+            if (clip != null) {
+                setClipVolume(clip, soundVolume);
+                soundEffects.put(name, clip);
+                System.out.println("대체 사운드 생성: " + name);
+            }
+        }
+    }
+
+    /**
      * 효과음 파일을 로드합니다
      */
     private void loadSoundEffect(String name, String filePath) {
@@ -83,10 +120,18 @@ public class AudioManager {
             Clip clip = null;
 
             if (soundFile.exists()) {
-                // 실제 파일이 존재하는 경우
-                AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundFile);
-                clip = AudioSystem.getClip();
-                clip.open(audioStream);
+                // MP3 파일인 경우 특별 처리
+                if (filePath.toLowerCase().endsWith(".mp3")) {
+                    System.out.println("MP3 파일 로드 시도: " + filePath);
+                    // MP3 파일은 현재 Java AudioSystem에서 직접 지원하지 않음
+                    // 대신 프로그래밍적으로 생성된 사운드를 사용
+                    clip = generateSoundEffect(name);
+                } else {
+                    // WAV 및 기타 지원 파일
+                    AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundFile);
+                    clip = AudioSystem.getClip();
+                    clip.open(audioStream);
+                }
             } else {
                 // 파일이 없는 경우 프로그래밍적으로 생성
                 clip = generateSoundEffect(name);
@@ -96,8 +141,10 @@ public class AudioManager {
                 // 볼륨 조절
                 setClipVolume(clip, soundVolume);
                 soundEffects.put(name, clip);
+                System.out.println("사운드 로드 성공: " + name);
             }
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            System.out.println("파일 로드 실패, 대체 사운드 생성: " + name);
             // 파일 로드 실패 시 프로그래밍적으로 생성
             Clip clip = generateSoundEffect(name);
             if (clip != null) {
@@ -115,7 +162,7 @@ public class AudioManager {
             case "click":
                 return SoundGenerator.generateTone(800, 100, 0.7);
             case "button_hover":
-                return SoundGenerator.generateTone(600, 50, 0.5);
+                return SoundGenerator.generateTone(900, 80, 0.8); // Click 소리와 동일
             case "pause":
                 return SoundGenerator.generateTone(300, 200, 0.8);
             case "resume":
@@ -134,6 +181,19 @@ public class AudioManager {
                 return SoundGenerator.generateTone(200, 200, 0.7);
             case "perfect":
                 return SoundGenerator.generateConfirmSound();
+
+            // 새로운 효과음들
+            case "Click":
+                return SoundGenerator.generateTone(900, 80, 0.8); // 높은 톤의 클릭음
+            case "FarmUp":
+                return SoundGenerator.generateConfirmSound(); // 팜업 = 성공음
+            case "Over":
+                return SoundGenerator.generateCancelSound(); // 게임 오버 = 실패음
+            case "success":
+                return SoundGenerator.generateSuccessSound(); // 성공음
+            case "Touch":
+                return SoundGenerator.generateTone(750, 120, 0.6); // 터치음
+
             default:
                 return SoundGenerator.generateTone(800, 100, 0.7);
         }
@@ -276,7 +336,15 @@ public class AudioManager {
                 soundPlayed = tryPlaySoundEffect("menu_back");
                 break;
             case "button_hover":
-                soundPlayed = tryPlaySoundEffect("button_hover");
+                // MP3 Click 사운드 우선 재생
+                if (playMp3Sound("Click")) {
+                    soundPlayed = true;
+                } else {
+                    soundPlayed = tryPlaySoundEffect("Click");
+                    if (!soundPlayed) {
+                        soundPlayed = tryPlaySoundEffect("click");
+                    }
+                }
                 break;
             case "confirm":
                 soundPlayed = tryPlaySoundEffect("confirm");
@@ -285,7 +353,15 @@ public class AudioManager {
                 soundPlayed = tryPlaySoundEffect("cancel");
                 break;
             case "click":
-                soundPlayed = tryPlaySoundEffect("click");
+                // MP3 Click 사운드 우선 재생
+                if (playMp3Sound("Click")) {
+                    soundPlayed = true;
+                } else {
+                    soundPlayed = tryPlaySoundEffect("Click");
+                    if (!soundPlayed) {
+                        soundPlayed = tryPlaySoundEffect("click");
+                    }
+                }
                 break;
         }
 
@@ -327,7 +403,7 @@ public class AudioManager {
      * 게임 일시정지 시 배경음악도 일시정지합니다
      */
     public void pauseGame() {
-        playUISound("pause");
+        playFarmUpSound(); // FarmUp 소리로 변경
         pauseBackgroundMusic();
     }
 
@@ -415,6 +491,10 @@ public class AudioManager {
         }
         soundEffects.clear();
 
+        // MP3Player 리소스 정리
+        if (mp3Player != null) {
+            mp3Player.cleanup();
+        }
     }
 
     // Getters and Setters
@@ -436,6 +516,9 @@ public class AudioManager {
 
     public void setSoundEnabled(boolean enabled) {
         this.soundEnabled = enabled;
+        if (mp3Player != null) {
+            mp3Player.setEnabled(enabled);
+        }
     }
 
     public void setMusicEnabled(boolean enabled) {
@@ -453,6 +536,11 @@ public class AudioManager {
         for (Clip clip : soundEffects.values()) {
             setClipVolume(clip, this.soundVolume);
         }
+
+        // MP3Player 볼륨 업데이트
+        if (mp3Player != null) {
+            mp3Player.setVolume(this.soundVolume);
+        }
     }
 
     public void setMusicVolume(float volume) {
@@ -460,6 +548,107 @@ public class AudioManager {
         if (backgroundMusic != null) {
             setClipVolume(backgroundMusic, this.musicVolume);
         }
+    }
 
+    /**
+     * 모든 클릭음을 재생합니다
+     */
+    public void playClickSound() {
+        System.out.println("클릭음 재생");
+        if (playMp3Sound("Click")) {
+            return; // MP3 재생 성공
+        }
+
+        // MP3 재생 실패시 대체 사운드 재생
+        boolean soundPlayed = tryPlaySoundEffect("Click");
+        if (!soundPlayed) {
+            // 대체 사운드로 기본 클릭음 재생
+            playSoundEffect("click");
+        }
+    }
+
+    /**
+     * 팜업 사운드를 재생합니다
+     */
+    public void playFarmUpSound() {
+        System.out.println("팜업 사운드 재생");
+        if (playMp3Sound("FarmUp")) {
+            return; // MP3 재생 성공
+        }
+
+        // MP3 재생 실패시 대체 사운드 재생
+        boolean soundPlayed = tryPlaySoundEffect("FarmUp");
+        if (!soundPlayed) {
+            // 대체 사운드로 성공음 재생
+            playSoundEffect("confirm");
+        }
+    }
+
+    /**
+     * 게임 오버 사운드를 재생합니다
+     */
+    public void playGameOverSound() {
+        System.out.println("게임 오버 사운드 재생");
+        if (playMp3Sound("Over")) {
+            return; // MP3 재생 성공
+        }
+
+        // MP3 재생 실패시 대체 사운드 재생
+        boolean soundPlayed = tryPlaySoundEffect("Over");
+        if (!soundPlayed) {
+            // 대체 사운드로 미스음 재생
+            playSoundEffect("miss");
+        }
+    }
+
+    /**
+     * 게임 성공 사운드를 재생합니다
+     */
+    public void playGameSuccessSound() {
+        System.out.println("게임 성공 사운드 재생");
+        if (playMp3Sound("success")) {
+            return; // MP3 재생 성공
+        }
+
+        // MP3 재생 실패시 대체 사운드 재생
+        boolean soundPlayed = tryPlaySoundEffect("success");
+        if (!soundPlayed) {
+            // 대체 사운드로 완벽 판정음 재생
+            playSoundEffect("perfect");
+        }
+    }
+
+    /**
+     * 터치 입력 사운드를 재생합니다
+     */
+    public void playTouchSound() {
+        System.out.println("터치 사운드 재생");
+        if (playMp3Sound("Touch")) {
+            return; // MP3 재생 성공
+        }
+
+        // MP3 재생 실패시 대체 사운드 재생
+        boolean soundPlayed = tryPlaySoundEffect("Touch");
+        if (!soundPlayed) {
+            // 대체 사운드로 기본 클릭음 재생
+            playSoundEffect("click");
+        }
+    }
+
+    /**
+     * MP3 사운드를 재생하고 성공 여부를 반환합니다
+     */
+    private boolean playMp3Sound(String name) {
+        if (!soundEnabled || mp3Player == null) {
+            return false;
+        }
+
+        try {
+            mp3Player.playSoundAsync(name);
+            return true;
+        } catch (Exception e) {
+            System.err.println("MP3 재생 실패: " + name + " - " + e.getMessage());
+            return false;
+        }
     }
 }

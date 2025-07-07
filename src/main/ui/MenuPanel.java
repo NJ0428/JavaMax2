@@ -44,17 +44,26 @@ public class MenuPanel extends JPanel {
 
         // 시작 버튼
         JButton startButton = createMenuButton("게임 시작", 300);
-        startButton.addActionListener(e -> gameFrame.showGameSelectScreen());
+        startButton.addActionListener(e -> {
+            gameFrame.getAudioManager().playClickSound();
+            gameFrame.showGameSelectScreen();
+        });
         add(startButton);
 
         // 설정 버튼
         JButton settingsButton = createMenuButton("설정", 370);
-        settingsButton.addActionListener(e -> showSettingsDialog());
+        settingsButton.addActionListener(e -> {
+            gameFrame.getAudioManager().playClickSound();
+            showSettingsDialog();
+        });
         add(settingsButton);
 
         // 종료 버튼
         JButton exitButton = createMenuButton("종료", 440);
-        exitButton.addActionListener(e -> System.exit(0));
+        exitButton.addActionListener(e -> {
+            gameFrame.getAudioManager().playClickSound();
+            System.exit(0);
+        });
         add(exitButton);
 
         // 조작법 안내
@@ -83,6 +92,7 @@ public class MenuPanel extends JPanel {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 button.setBackground(new Color(120, 120, 170));
+                gameFrame.getAudioManager().playClickSound();
             }
 
             @Override

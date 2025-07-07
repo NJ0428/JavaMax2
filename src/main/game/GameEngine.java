@@ -1,6 +1,7 @@
 package main.game;
 
 import main.utils.Constants;
+import main.audio.AudioManager;
 import java.util.*;
 import java.util.List;
 
@@ -18,6 +19,7 @@ public class GameEngine {
     private Random random;
     private int noteSpawnTimer;
     private int noteSpawnInterval;
+    private AudioManager audioManager;
 
     public GameEngine() {
         notes = new ArrayList<>();
@@ -26,6 +28,14 @@ public class GameEngine {
         random = new Random();
         gameState = GameState.MENU;
         noteSpawnInterval = 60; // 60프레임마다 노트 생성 (1초)
+        // AudioManager는 외부에서 설정하도록 함
+    }
+
+    /**
+     * AudioManager를 설정합니다
+     */
+    public void setAudioManager(AudioManager audioManager) {
+        this.audioManager = audioManager;
     }
 
     /**
@@ -80,8 +90,14 @@ public class GameEngine {
     public void togglePause() {
         if (gameState == GameState.PLAYING) {
             gameState = GameState.PAUSED;
+            if (audioManager != null) {
+                audioManager.pauseGame();
+            }
         } else if (gameState == GameState.PAUSED) {
             gameState = GameState.PLAYING;
+            if (audioManager != null) {
+                audioManager.resumeGame();
+            }
         }
     }
 
@@ -90,6 +106,14 @@ public class GameEngine {
      */
     public void endGame() {
         gameState = GameState.RESULT;
+        if (audioManager != null) {
+            // 게임 결과에 따라 다른 사운드 재생
+            if (scoreManager.getScore() >= 1000) { // 성공 기준 (예시)
+                audioManager.playGameSuccessSound();
+            } else {
+                audioManager.playGameOverSound();
+            }
+        }
     }
 
     /**
@@ -99,6 +123,9 @@ public class GameEngine {
         gameState = GameState.MENU;
         notes.clear();
         scoreManager.reset();
+        if (audioManager != null) {
+            audioManager.playUISound("menu_back");
+        }
     }
 
     /**
@@ -180,6 +207,11 @@ public class GameEngine {
 
         lanePressed[lane] = true;
 
+        // 터치 사운드 재생
+        if (audioManager != null) {
+            audioManager.playTouchSound();
+        }
+
         // 해당 레인에서 가장 가까운 노트 찾기
         Note closestNote = null;
         int minDistance = Integer.MAX_VALUE;
@@ -199,6 +231,9 @@ public class GameEngine {
             String judgment = closestNote.getJudgment();
             closestNote.setHit(true);
             scoreManager.processJudgment(judgment);
+
+            // Touch 소리만 재생하므로 판정 사운드는 제거
+            // (이미 위에서 Touch 소리가 재생됨)
         }
     }
 

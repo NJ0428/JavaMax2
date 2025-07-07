@@ -170,4 +170,50 @@ public class SoundGenerator {
     public static Clip generateMenuBackSound() {
         return generateTone(450, 150, 0.3);
     }
+
+    /**
+     * 성공 사운드 생성 (상승하는 3개 톤 조합)
+     */
+    public static Clip generateSuccessSound() {
+        try {
+            AudioFormat format = new AudioFormat(
+                    SAMPLE_RATE, SAMPLE_SIZE_IN_BITS, CHANNELS, SIGNED, BIG_ENDIAN);
+
+            int frameCount = (int) (600 * SAMPLE_RATE / 1000.0); // 600ms
+            byte[] samples = new byte[frameCount * 2];
+
+            for (int i = 0; i < frameCount; i++) {
+                double progress = (double) i / frameCount;
+                double frequency;
+
+                // 3단계 상승 톤 (200ms씩)
+                if (progress < 0.33) {
+                    frequency = 400; // 첫 번째 톤
+                } else if (progress < 0.66) {
+                    frequency = 500; // 두 번째 톤
+                } else {
+                    frequency = 600; // 세 번째 톤
+                }
+
+                double angle = 2.0 * Math.PI * i * frequency / SAMPLE_RATE;
+                // 페이드 인/아웃 효과
+                double envelope = Math.sin(Math.PI * progress);
+                short sample = (short) (Math.sin(angle) * envelope * 0.4 * Short.MAX_VALUE);
+
+                samples[i * 2] = (byte) (sample & 0xFF);
+                samples[i * 2 + 1] = (byte) ((sample >> 8) & 0xFF);
+            }
+
+            ByteArrayInputStream bais = new ByteArrayInputStream(samples);
+            AudioInputStream ais = new AudioInputStream(bais, format, frameCount);
+
+            Clip clip = AudioSystem.getClip();
+            clip.open(ais);
+            return clip;
+
+        } catch (LineUnavailableException | IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

@@ -86,7 +86,7 @@ public class PausePanel extends JPanel {
             public void mouseEntered(MouseEvent e) {
                 // 호버 사운드 재생
                 if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
-                    RhythmGame.getInstance().getAudioManager().playUISound("button_hover");
+                    RhythmGame.getInstance().getAudioManager().playClickSound();
                 }
 
                 // 밝기 증가
