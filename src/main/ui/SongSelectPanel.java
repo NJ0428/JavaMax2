@@ -316,60 +316,17 @@ public class SongSelectPanel extends JPanel {
     }
 
     /**
-     * 미리듣기 컨트롤 패널을 생성합니다
+     * 미리듣기 컨트롤 패널을 생성합니다 (UI 없이 자동 재생만)
      */
     private void createPreviewControls() {
-        // 미리듣기 컨트롤 패널
-        JPanel previewPanel = new JPanel();
-        previewPanel.setBounds(320, 290, 400, 80);
-        previewPanel.setBackground(new Color(0, 0, 0, 180));
-        previewPanel.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 150), 2));
-        previewPanel.setLayout(null);
-
-        // 제목
-        JLabel previewTitle = new JLabel("미리듣기", SwingConstants.CENTER);
-        previewTitle.setBounds(0, 5, 400, 20);
-        previewTitle.setFont(new Font("맑은 고딕", Font.BOLD, 14));
-        previewTitle.setForeground(Color.WHITE);
-        previewPanel.add(previewTitle);
-
-        // 재생/일시정지 버튼
+        // UI 컴포넌트들을 생성하지만 화면에 추가하지 않음
+        // 내부 로직에서만 사용하기 위해 기본 객체들만 생성
         previewPlayButton = new JButton("▶");
-        previewPlayButton.setBounds(50, 30, 40, 25);
-        previewPlayButton.setFont(new Font("맑은 고딕", Font.BOLD, 12));
-        previewPlayButton.setBackground(new Color(100, 200, 100));
-        previewPlayButton.setForeground(Color.WHITE);
-        previewPlayButton.setFocusPainted(false);
-        previewPlayButton.addActionListener(e -> togglePreview());
-        previewPanel.add(previewPlayButton);
-
-        // 정지 버튼
         previewStopButton = new JButton("■");
-        previewStopButton.setBounds(100, 30, 40, 25);
-        previewStopButton.setFont(new Font("맑은 고딕", Font.BOLD, 12));
-        previewStopButton.setBackground(new Color(200, 100, 100));
-        previewStopButton.setForeground(Color.WHITE);
-        previewStopButton.setFocusPainted(false);
-        previewStopButton.addActionListener(e -> stopPreview());
-        previewPanel.add(previewStopButton);
-
-        // 진행 상태바
         previewProgressBar = new JProgressBar(0, 100);
-        previewProgressBar.setBounds(150, 32, 180, 20);
-        previewProgressBar.setStringPainted(true);
-        previewProgressBar.setString("0 / 30초");
-        previewProgressBar.setBackground(new Color(50, 50, 70));
-        previewProgressBar.setForeground(new Color(100, 150, 200));
-        previewPanel.add(previewProgressBar);
+        previewStatusLabel = new JLabel("준비됨");
 
-        // 상태 라벨
-        previewStatusLabel = new JLabel("준비됨", SwingConstants.CENTER);
-        previewStatusLabel.setBounds(0, 55, 400, 20);
-        previewStatusLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
-        previewStatusLabel.setForeground(Color.LIGHT_GRAY);
-        previewPanel.add(previewStatusLabel);
-
-        add(previewPanel);
+        // 미리듣기는 자동으로만 실행되므로 UI는 표시하지 않음
     }
 
     /**
@@ -535,10 +492,8 @@ public class SongSelectPanel extends JPanel {
         // 난이도 정보 업데이트
         updateDifficultyInfo();
 
-        // 미리듣기 자동 시작 (초기 로드 시에만)
-        if (previewStatusLabel != null && previewStatusLabel.getText().equals("준비됨")) {
-            SwingUtilities.invokeLater(() -> startAutoPreview());
-        }
+        // 미리듣기 자동 시작 (항상)
+        SwingUtilities.invokeLater(() -> startAutoPreview());
     }
 
     /**
@@ -628,28 +583,15 @@ public class SongSelectPanel extends JPanel {
     }
 
     /**
-     * 미리듣기 컨트롤 버튼들의 상태를 업데이트합니다
+     * 미리듣기 컨트롤 버튼들의 상태를 업데이트합니다 (UI 없음)
      */
     private void updatePreviewControls() {
-        if (audioManager == null)
-            return;
-
-        if (audioManager.isPreviewPlaying()) {
-            if (audioManager.isPreviewPaused()) {
-                previewPlayButton.setText("▶");
-                previewPlayButton.setBackground(new Color(100, 200, 100));
-            } else {
-                previewPlayButton.setText("⏸");
-                previewPlayButton.setBackground(new Color(200, 150, 100));
-            }
-        } else {
-            previewPlayButton.setText("▶");
-            previewPlayButton.setBackground(new Color(100, 200, 100));
-        }
+        // UI가 없으므로 버튼 상태 업데이트는 생략
+        // 내부 상태만 유지
     }
 
     /**
-     * 미리듣기 진행 상태를 업데이트하는 타이머를 시작합니다
+     * 미리듣기 진행 상태를 업데이트하는 타이머를 시작합니다 (UI 없음)
      */
     private void startPreviewTimer() {
         if (previewTimer != null) {
@@ -660,11 +602,8 @@ public class SongSelectPanel extends JPanel {
             if (isPreviewPlaying && previewStartTime > 0) {
                 long elapsed = System.currentTimeMillis() - previewStartTime;
                 int seconds = (int) (elapsed / 1000);
-                int progress = Math.min(100, (int) ((elapsed / 30000.0) * 100)); // 30초 = 100%
 
-                previewProgressBar.setValue(progress);
-                previewProgressBar.setString(seconds + " / 30초");
-
+                // UI 업데이트는 생략하고 30초 체크만 수행
                 if (seconds >= 30) {
                     stopPreviewTimer();
                 }
