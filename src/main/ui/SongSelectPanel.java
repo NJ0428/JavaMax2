@@ -4,11 +4,14 @@ import main.game.Song;
 import main.utils.Constants;
 import main.utils.ImageLoader;
 import main.utils.MusicFileScanner;
+import main.audio.AudioManager;
+import main.audio.PreviewPlayer;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,13 +29,28 @@ public class SongSelectPanel extends JPanel {
     private JLabel songDetailLabel;
     private JLabel difficultyInfoLabel;
 
+    // 미리듣기 관련 컴포넌트
+    private AudioManager audioManager;
+    private JButton previewPlayButton;
+    private JButton previewStopButton;
+    private JLabel previewStatusLabel;
+    private JProgressBar previewProgressBar;
+    private javax.swing.Timer previewTimer;
+    private long previewStartTime;
+    private boolean isPreviewPlaying;
+
     public SongSelectPanel(GameFrame gameFrame) {
         this.gameFrame = gameFrame;
         this.currentSongIndex = 0;
         this.selectedDifficulty = 1; // 기본: 중
+        this.isPreviewPlaying = false;
         setPreferredSize(new Dimension(Constants.WINDOW_WIDTH, Constants.WINDOW_HEIGHT));
         setBackground(Constants.BACKGROUND_COLOR);
         setLayout(null);
+
+        // AudioManager 인스턴스 가져오기 (GameFrame에서)
+        this.audioManager = gameFrame.getAudioManager();
+        initializePreviewPlayer();
 
         initializeSongs();
         initializeComponents();
@@ -100,6 +118,9 @@ public class SongSelectPanel extends JPanel {
 
         // 네비게이션 버튼들
         createNavigationButtons();
+
+        // 미리듣기 컨트롤 패널
+        createPreviewControls();
 
         // 하단 버튼들
         createBottomButtons();
@@ -226,6 +247,132 @@ public class SongSelectPanel extends JPanel {
     }
 
     /**
+     * 미리듣기 플레이어를 초기화합니다
+     */
+    private void initializePreviewPlayer() {
+        if (audioManager != null) {
+            audioManager.setPreviewListener(new PreviewPlayer.PreviewListener() {
+                @Override
+                public void onPreviewStarted() {
+                    SwingUtilities.invokeLater(() -> {
+                        isPreviewPlaying = true;
+                        previewStartTime = System.currentTimeMillis();
+                        updatePreviewControls();
+                        startPreviewTimer();
+                        previewStatusLabel.setText("미리듣기 재생 중...");
+                    });
+                }
+
+                @Override
+                public void onPreviewPaused() {
+                    SwingUtilities.invokeLater(() -> {
+                        updatePreviewControls();
+                        previewStatusLabel.setText("미리듣기 일시정지");
+                    });
+                }
+
+                @Override
+                public void onPreviewResumed() {
+                    SwingUtilities.invokeLater(() -> {
+                        updatePreviewControls();
+                        previewStatusLabel.setText("미리듣기 재생 중...");
+                    });
+                }
+
+                @Override
+                public void onPreviewStopped() {
+                    SwingUtilities.invokeLater(() -> {
+                        isPreviewPlaying = false;
+                        updatePreviewControls();
+                        stopPreviewTimer();
+                        previewStatusLabel.setText("미리듣기 중지됨");
+                        previewProgressBar.setValue(0);
+                    });
+                }
+
+                @Override
+                public void onPreviewCompleted() {
+                    SwingUtilities.invokeLater(() -> {
+                        isPreviewPlaying = false;
+                        updatePreviewControls();
+                        stopPreviewTimer();
+                        previewStatusLabel.setText("미리듣기 완료");
+                        previewProgressBar.setValue(100);
+                    });
+                }
+
+                @Override
+                public void onPreviewError(String error) {
+                    SwingUtilities.invokeLater(() -> {
+                        isPreviewPlaying = false;
+                        updatePreviewControls();
+                        stopPreviewTimer();
+                        previewStatusLabel.setText("오류: " + error);
+                        previewProgressBar.setValue(0);
+                    });
+                }
+            });
+        }
+    }
+
+    /**
+     * 미리듣기 컨트롤 패널을 생성합니다
+     */
+    private void createPreviewControls() {
+        // 미리듣기 컨트롤 패널
+        JPanel previewPanel = new JPanel();
+        previewPanel.setBounds(320, 290, 400, 80);
+        previewPanel.setBackground(new Color(0, 0, 0, 180));
+        previewPanel.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 150), 2));
+        previewPanel.setLayout(null);
+
+        // 제목
+        JLabel previewTitle = new JLabel("미리듣기", SwingConstants.CENTER);
+        previewTitle.setBounds(0, 5, 400, 20);
+        previewTitle.setFont(new Font("맑은 고딕", Font.BOLD, 14));
+        previewTitle.setForeground(Color.WHITE);
+        previewPanel.add(previewTitle);
+
+        // 재생/일시정지 버튼
+        previewPlayButton = new JButton("▶");
+        previewPlayButton.setBounds(50, 30, 40, 25);
+        previewPlayButton.setFont(new Font("맑은 고딕", Font.BOLD, 12));
+        previewPlayButton.setBackground(new Color(100, 200, 100));
+        previewPlayButton.setForeground(Color.WHITE);
+        previewPlayButton.setFocusPainted(false);
+        previewPlayButton.addActionListener(e -> togglePreview());
+        previewPanel.add(previewPlayButton);
+
+        // 정지 버튼
+        previewStopButton = new JButton("■");
+        previewStopButton.setBounds(100, 30, 40, 25);
+        previewStopButton.setFont(new Font("맑은 고딕", Font.BOLD, 12));
+        previewStopButton.setBackground(new Color(200, 100, 100));
+        previewStopButton.setForeground(Color.WHITE);
+        previewStopButton.setFocusPainted(false);
+        previewStopButton.addActionListener(e -> stopPreview());
+        previewPanel.add(previewStopButton);
+
+        // 진행 상태바
+        previewProgressBar = new JProgressBar(0, 100);
+        previewProgressBar.setBounds(150, 32, 180, 20);
+        previewProgressBar.setStringPainted(true);
+        previewProgressBar.setString("0 / 30초");
+        previewProgressBar.setBackground(new Color(50, 50, 70));
+        previewProgressBar.setForeground(new Color(100, 150, 200));
+        previewPanel.add(previewProgressBar);
+
+        // 상태 라벨
+        previewStatusLabel = new JLabel("준비됨", SwingConstants.CENTER);
+        previewStatusLabel.setBounds(0, 55, 400, 20);
+        previewStatusLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
+        previewStatusLabel.setForeground(Color.LIGHT_GRAY);
+        previewPanel.add(previewStatusLabel);
+
+        add(previewPanel);
+    }
+
+    /**
      * 네비게이션 버튼들을 생성합니다
      */
     private void createNavigationButtons() {
@@ -297,16 +444,28 @@ public class SongSelectPanel extends JPanel {
      * 이전 곡으로 이동
      */
     private void previousSong() {
+        // 미리듣기 중지
+        stopPreview();
+
         currentSongIndex = (currentSongIndex - 1 + songs.size()) % songs.size();
         updateSongDisplay();
+
+        // 새 곡 자동 미리듣기 시작
+        startAutoPreview();
     }
 
     /**
      * 다음 곡으로 이동
      */
     private void nextSong() {
+        // 미리듣기 중지
+        stopPreview();
+
         currentSongIndex = (currentSongIndex + 1) % songs.size();
         updateSongDisplay();
+
+        // 새 곡 자동 미리듣기 시작
+        startAutoPreview();
     }
 
     /**
@@ -375,6 +534,11 @@ public class SongSelectPanel extends JPanel {
 
         // 난이도 정보 업데이트
         updateDifficultyInfo();
+
+        // 미리듣기 자동 시작 (초기 로드 시에만)
+        if (previewStatusLabel != null && previewStatusLabel.getText().equals("준비됨")) {
+            SwingUtilities.invokeLater(() -> startAutoPreview());
+        }
     }
 
     /**
@@ -401,11 +565,121 @@ public class SongSelectPanel extends JPanel {
      */
     private void startSelectedSong() {
         if (!songs.isEmpty()) {
+            // 게임 시작 전 미리듣기 중지
+            stopPreview();
+
             Song selectedSong = songs.get(currentSongIndex);
             Song.Difficulty selectedDiff = selectedSong.getDifficulty(selectedDifficulty);
 
             // 선택된 곡과 난이도 정보를 GameFrame에 전달
             gameFrame.startSongGame(selectedSong, selectedDiff);
+        }
+    }
+
+    // =============== 미리듣기 관련 메서드들 ===============
+
+    /**
+     * 자동 미리듣기를 시작합니다
+     */
+    private void startAutoPreview() {
+        if (songs.isEmpty())
+            return;
+
+        Song currentSong = songs.get(currentSongIndex);
+        String audioPath = currentSong.getAudioPath();
+
+        // 파일 존재 여부 확인
+        File audioFile = new File(audioPath);
+        if (audioFile.exists()) {
+            if (audioManager != null) {
+                audioManager.startPreview(audioPath);
+            }
+        } else {
+            previewStatusLabel.setText("오디오 파일 없음: " + currentSong.getTitle());
+            System.out.println("미리듣기 파일 없음: " + audioPath);
+        }
+    }
+
+    /**
+     * 미리듣기 재생/일시정지를 토글합니다
+     */
+    private void togglePreview() {
+        if (audioManager == null)
+            return;
+
+        if (audioManager.isPreviewPlaying()) {
+            if (audioManager.isPreviewPaused()) {
+                audioManager.resumePreview();
+            } else {
+                audioManager.pausePreview();
+            }
+        } else {
+            startAutoPreview();
+        }
+    }
+
+    /**
+     * 미리듣기를 중지합니다
+     */
+    private void stopPreview() {
+        if (audioManager != null) {
+            audioManager.stopPreview();
+        }
+    }
+
+    /**
+     * 미리듣기 컨트롤 버튼들의 상태를 업데이트합니다
+     */
+    private void updatePreviewControls() {
+        if (audioManager == null)
+            return;
+
+        if (audioManager.isPreviewPlaying()) {
+            if (audioManager.isPreviewPaused()) {
+                previewPlayButton.setText("▶");
+                previewPlayButton.setBackground(new Color(100, 200, 100));
+            } else {
+                previewPlayButton.setText("⏸");
+                previewPlayButton.setBackground(new Color(200, 150, 100));
+            }
+        } else {
+            previewPlayButton.setText("▶");
+            previewPlayButton.setBackground(new Color(100, 200, 100));
+        }
+    }
+
+    /**
+     * 미리듣기 진행 상태를 업데이트하는 타이머를 시작합니다
+     */
+    private void startPreviewTimer() {
+        if (previewTimer != null) {
+            previewTimer.stop();
+        }
+
+        previewTimer = new javax.swing.Timer(100, e -> {
+            if (isPreviewPlaying && previewStartTime > 0) {
+                long elapsed = System.currentTimeMillis() - previewStartTime;
+                int seconds = (int) (elapsed / 1000);
+                int progress = Math.min(100, (int) ((elapsed / 30000.0) * 100)); // 30초 = 100%
+
+                previewProgressBar.setValue(progress);
+                previewProgressBar.setString(seconds + " / 30초");
+
+                if (seconds >= 30) {
+                    stopPreviewTimer();
+                }
+            }
+        });
+        previewTimer.start();
+    }
+
+    /**
+     * 미리듣기 진행 상태 타이머를 중지합니다
+     */
+    private void stopPreviewTimer() {
+        if (previewTimer != null) {
+            previewTimer.stop();
+            previewTimer = null;
         }
     }
 
@@ -453,5 +727,13 @@ public class SongSelectPanel extends JPanel {
         g2d.setFont(new Font("Arial", Font.BOLD, 14));
         String indexText = String.format("%d / %d", currentSongIndex + 1, songs.size());
         g2d.drawString(indexText, 50, Constants.WINDOW_HEIGHT - 120);
+    }
+
+    /**
+     * 패널이 닫힐 때 리소스를 정리합니다
+     */
+    public void cleanup() {
+        stopPreview();
+        stopPreviewTimer();
     }
 }

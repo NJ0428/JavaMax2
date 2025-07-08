@@ -19,6 +19,7 @@ public class AudioManager {
     private float soundVolume;
     private float musicVolume;
     private Mp3Player mp3Player; // MP3 재생을 위한 플레이어
+    private PreviewPlayer previewPlayer; // 미리듣기 플레이어
 
     public AudioManager() {
         soundEffects = new HashMap<>();
@@ -27,6 +28,7 @@ public class AudioManager {
         soundVolume = 1.0f; // 최대 볼륨으로 설정
         musicVolume = 0.7f;
         mp3Player = new Mp3Player();
+        previewPlayer = new PreviewPlayer();
 
         System.out.println("=== AudioManager 초기화 시작 ===");
         loadSoundEffects();
@@ -495,6 +497,11 @@ public class AudioManager {
         if (mp3Player != null) {
             mp3Player.cleanup();
         }
+
+        // PreviewPlayer 리소스 정리
+        if (previewPlayer != null) {
+            previewPlayer.cleanup();
+        }
     }
 
     // Getters and Setters
@@ -650,5 +657,84 @@ public class AudioManager {
             System.err.println("MP3 재생 실패: " + name + " - " + e.getMessage());
             return false;
         }
+    }
+
+    // =============== 미리듣기 기능 ===============
+
+    /**
+     * 노래 미리듣기를 시작합니다
+     * 
+     * @param filePath 미리듣기할 파일 경로
+     */
+    public void startPreview(String filePath) {
+        if (previewPlayer != null) {
+            previewPlayer.startPreview(filePath);
+        }
+    }
+
+    /**
+     * 미리듣기를 일시정지합니다
+     */
+    public void pausePreview() {
+        if (previewPlayer != null) {
+            previewPlayer.pausePreview();
+        }
+    }
+
+    /**
+     * 미리듣기를 재개합니다
+     */
+    public void resumePreview() {
+        if (previewPlayer != null) {
+            previewPlayer.resumePreview();
+        }
+    }
+
+    /**
+     * 미리듣기를 중지합니다
+     */
+    public void stopPreview() {
+        if (previewPlayer != null) {
+            previewPlayer.stopPreview();
+        }
+    }
+
+    /**
+     * 미리듣기 상태를 확인합니다
+     */
+    public boolean isPreviewPlaying() {
+        return previewPlayer != null && previewPlayer.isPlaying();
+    }
+
+    /**
+     * 미리듣기 일시정지 상태를 확인합니다
+     */
+    public boolean isPreviewPaused() {
+        return previewPlayer != null && previewPlayer.isPaused();
+    }
+
+    /**
+     * 미리듣기 리스너를 설정합니다
+     */
+    public void setPreviewListener(PreviewPlayer.PreviewListener listener) {
+        if (previewPlayer != null) {
+            previewPlayer.setPreviewListener(listener);
+        }
+    }
+
+    /**
+     * 미리듣기 볼륨을 설정합니다
+     */
+    public void setPreviewVolume(float volume) {
+        if (previewPlayer != null) {
+            previewPlayer.setVolume(volume);
+        }
+    }
+
+    /**
+     * PreviewPlayer 인스턴스를 반환합니다
+     */
+    public PreviewPlayer getPreviewPlayer() {
+        return previewPlayer;
     }
 }
