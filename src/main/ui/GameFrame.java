@@ -29,9 +29,11 @@ public class GameFrame extends JFrame implements KeyListener {
     private CardLayout cardLayout;
     private JPanel mainPanel;
     private Timer gameTimer;
+    private String currentPanelName; // 현재 활성화된 패널 이름
 
     public GameFrame() {
         gameEngine = new GameEngine();
+        currentPanelName = "MENU"; // 초기 패널은 메뉴
         initializeFrame();
         initializePanels();
         setupTimer();
@@ -157,10 +159,11 @@ public class GameFrame extends JFrame implements KeyListener {
      */
     public void showMenu() {
         // SongSelectPanel에서 다른 화면으로 전환할 때 미리듣기 중지
-        if (songSelectPanel != null) {
+        if (songSelectPanel != null && "SONG_SELECT".equals(currentPanelName)) {
             songSelectPanel.onPanelDeactivated();
         }
 
+        currentPanelName = "MENU";
         cardLayout.show(mainPanel, "MENU");
         requestFocus();
     }
@@ -170,10 +173,11 @@ public class GameFrame extends JFrame implements KeyListener {
      */
     public void showGameSelect() {
         // SongSelectPanel에서 다른 화면으로 전환할 때 미리듣기 중지
-        if (songSelectPanel != null) {
+        if (songSelectPanel != null && "SONG_SELECT".equals(currentPanelName)) {
             songSelectPanel.onPanelDeactivated();
         }
 
+        currentPanelName = "GAME_SELECT";
         cardLayout.show(mainPanel, "GAME_SELECT");
         requestFocus();
     }
@@ -182,11 +186,18 @@ public class GameFrame extends JFrame implements KeyListener {
      * 노래 선택 화면을 표시합니다
      */
     public void showSongSelect() {
-        // 다른 패널에서 SongSelectPanel로 전환할 때 미리듣기 비활성화
-        if (songSelectPanel != null) {
+        // 이미 SONG_SELECT 패널이 활성화되어 있으면 중복 호출 방지
+        if ("SONG_SELECT".equals(currentPanelName)) {
+            System.out.println("이미 노래 선택 화면이 활성화되어 있음 - 중복 호출 방지");
+            return;
+        }
+
+        // 다른 패널에서 SongSelectPanel로 전환할 때만 비활성화 호출
+        if (songSelectPanel != null && !"SONG_SELECT".equals(currentPanelName)) {
             songSelectPanel.onPanelDeactivated();
         }
 
+        currentPanelName = "SONG_SELECT";
         cardLayout.show(mainPanel, "SONG_SELECT");
 
         // SongSelectPanel 활성화 및 미리듣기 시작

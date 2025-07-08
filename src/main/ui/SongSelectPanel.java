@@ -38,12 +38,16 @@ public class SongSelectPanel extends JPanel {
     private javax.swing.Timer previewTimer;
     private long previewStartTime;
     private boolean isPreviewPlaying;
+    private boolean isAutoPreviewEnabled; // 자동 미리듣기 활성화 상태
+    private String lastPreviewPath; // 마지막 미리듣기 파일 경로
 
     public SongSelectPanel(GameFrame gameFrame) {
         this.gameFrame = gameFrame;
         this.currentSongIndex = 0;
         this.selectedDifficulty = 1; // 기본: 중
         this.isPreviewPlaying = false;
+        this.isAutoPreviewEnabled = true;
+        this.lastPreviewPath = null;
         setPreferredSize(new Dimension(Constants.WINDOW_WIDTH, Constants.WINDOW_HEIGHT));
         setBackground(Constants.BACKGROUND_COLOR);
         setLayout(null);
@@ -87,10 +91,13 @@ public class SongSelectPanel extends JPanel {
      * 기본 데모 곡들을 추가합니다
      */
     private void addDefaultSongs() {
-        songs.add(new Song("Energetic Beat", "Rhythm Master", "Best Hits Vol.1", "Electronic", 128,
-                "energetic_beat.wav"));
-        songs.add(new Song("Dream Melody", "Sound Wave", "Peaceful Journey", "Ambient", 95, "dream_melody.wav"));
-        songs.add(new Song("Power Rush", "Beat Fighter", "Action Pack", "Rock", 140, "power_rush.wav"));
+        // 실제 존재하는 MP3 파일들만 추가 (파일명만 전달, 경로는 Song.getAudioPath()에서 자동 추가)
+        songs.add(new Song("Buried Star", "Unknown Artist", "Game OST", "Electronic", 128,
+                "BuriedStar_3.mp3"));
+        songs.add(new Song("Coding Boy", "Unknown Artist", "Game OST", "Electronic", 95,
+                "CodingBoy_2.mp3"));
+        songs.add(new Song("GID", "Unknown Artist", "Game OST", "Electronic", 140,
+                "gid_4.mp3"));
     }
 
     /**
@@ -259,7 +266,10 @@ public class SongSelectPanel extends JPanel {
                         previewStartTime = System.currentTimeMillis();
                         updatePreviewControls();
                         startPreviewTimer();
-                        previewStatusLabel.setText("미리듣기 재생 중...");
+                        if (previewStatusLabel != null) {
+                            previewStatusLabel.setText("미리듣기 재생 중...");
+                        }
+                        System.out.println("미리듣기 시작됨");
                     });
                 }
 
@@ -267,7 +277,10 @@ public class SongSelectPanel extends JPanel {
                 public void onPreviewPaused() {
                     SwingUtilities.invokeLater(() -> {
                         updatePreviewControls();
-                        previewStatusLabel.setText("미리듣기 일시정지");
+                        if (previewStatusLabel != null) {
+                            previewStatusLabel.setText("미리듣기 일시정지");
+                        }
+                        System.out.println("미리듣기 일시정지됨");
                     });
                 }
 
@@ -275,7 +288,10 @@ public class SongSelectPanel extends JPanel {
                 public void onPreviewResumed() {
                     SwingUtilities.invokeLater(() -> {
                         updatePreviewControls();
-                        previewStatusLabel.setText("미리듣기 재생 중...");
+                        if (previewStatusLabel != null) {
+                            previewStatusLabel.setText("미리듣기 재생 중...");
+                        }
+                        System.out.println("미리듣기 재개됨");
                     });
                 }
 
@@ -283,10 +299,16 @@ public class SongSelectPanel extends JPanel {
                 public void onPreviewStopped() {
                     SwingUtilities.invokeLater(() -> {
                         isPreviewPlaying = false;
+                        lastPreviewPath = null;
                         updatePreviewControls();
                         stopPreviewTimer();
-                        previewStatusLabel.setText("미리듣기 중지됨");
-                        previewProgressBar.setValue(0);
+                        if (previewStatusLabel != null) {
+                            previewStatusLabel.setText("미리듣기 중지됨");
+                        }
+                        if (previewProgressBar != null) {
+                            previewProgressBar.setValue(0);
+                        }
+                        System.out.println("미리듣기 중지됨");
                     });
                 }
 
@@ -294,10 +316,16 @@ public class SongSelectPanel extends JPanel {
                 public void onPreviewCompleted() {
                     SwingUtilities.invokeLater(() -> {
                         isPreviewPlaying = false;
+                        lastPreviewPath = null;
                         updatePreviewControls();
                         stopPreviewTimer();
-                        previewStatusLabel.setText("미리듣기 완료");
-                        previewProgressBar.setValue(100);
+                        if (previewStatusLabel != null) {
+                            previewStatusLabel.setText("미리듣기 완료");
+                        }
+                        if (previewProgressBar != null) {
+                            previewProgressBar.setValue(100);
+                        }
+                        System.out.println("미리듣기 완료됨 (30초)");
                     });
                 }
 
@@ -305,10 +333,16 @@ public class SongSelectPanel extends JPanel {
                 public void onPreviewError(String error) {
                     SwingUtilities.invokeLater(() -> {
                         isPreviewPlaying = false;
+                        lastPreviewPath = null;
                         updatePreviewControls();
                         stopPreviewTimer();
-                        previewStatusLabel.setText("오류: " + error);
-                        previewProgressBar.setValue(0);
+                        if (previewStatusLabel != null) {
+                            previewStatusLabel.setText("오류: " + error);
+                        }
+                        if (previewProgressBar != null) {
+                            previewProgressBar.setValue(0);
+                        }
+                        System.err.println("미리듣기 오류: " + error);
                     });
                 }
             });
@@ -401,28 +435,46 @@ public class SongSelectPanel extends JPanel {
      * 이전 곡으로 이동
      */
     private void previousSong() {
+        System.out.println("이전 곡으로 이동");
         // 미리듣기 중지
         stopPreview();
 
         currentSongIndex = (currentSongIndex - 1 + songs.size()) % songs.size();
         updateSongDisplay();
 
-        // 새 곡 자동 미리듣기 시작
-        startAutoPreview();
+        // 새 곡 자동 미리듣기 시작 (지연을 두고)
+        if (isAutoPreviewEnabled) {
+            javax.swing.Timer songChangeTimer = new javax.swing.Timer(200, e -> {
+                if (isAutoPreviewEnabled) {
+                    startAutoPreview();
+                }
+            });
+            songChangeTimer.setRepeats(false);
+            songChangeTimer.start();
+        }
     }
 
     /**
      * 다음 곡으로 이동
      */
     private void nextSong() {
+        System.out.println("다음 곡으로 이동");
         // 미리듣기 중지
         stopPreview();
 
         currentSongIndex = (currentSongIndex + 1) % songs.size();
         updateSongDisplay();
 
-        // 새 곡 자동 미리듣기 시작
-        startAutoPreview();
+        // 새 곡 자동 미리듣기 시작 (지연을 두고)
+        if (isAutoPreviewEnabled) {
+            javax.swing.Timer songChangeTimer = new javax.swing.Timer(200, e -> {
+                if (isAutoPreviewEnabled) {
+                    startAutoPreview();
+                }
+            });
+            songChangeTimer.setRepeats(false);
+            songChangeTimer.start();
+        }
     }
 
     /**
@@ -534,21 +586,52 @@ public class SongSelectPanel extends JPanel {
      * 자동 미리듣기를 시작합니다
      */
     private void startAutoPreview() {
-        if (songs.isEmpty())
+        if (!isAutoPreviewEnabled || songs.isEmpty() || audioManager == null) {
+            System.out.println("자동 미리듣기 시작 조건 불충족");
             return;
+        }
 
         Song currentSong = songs.get(currentSongIndex);
         String audioPath = currentSong.getAudioPath();
 
+        // 이미 같은 파일을 재생 중이면 중복 시작 방지
+        if (audioPath.equals(lastPreviewPath) && audioManager.isPreviewPlaying()) {
+            System.out.println("이미 재생 중인 파일: " + audioPath);
+            return;
+        }
+
         // 파일 존재 여부 확인
         File audioFile = new File(audioPath);
         if (audioFile.exists()) {
-            if (audioManager != null) {
-                audioManager.startPreview(audioPath);
+            System.out.println("미리듣기 시작 시도: " + audioPath);
+
+            // 이전 재생 완전히 중지
+            if (audioManager.isPreviewPlaying()) {
+                audioManager.stopPreview();
+                // 중지 후 잠시 대기
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
             }
+
+            lastPreviewPath = audioPath;
+
+            // 약간의 지연을 두고 시작 (이전 재생이 완전히 중지되도록)
+            javax.swing.Timer delayTimer = new javax.swing.Timer(200, e -> {
+                if (audioManager != null && isAutoPreviewEnabled && audioPath.equals(lastPreviewPath)) {
+                    System.out.println("미리듣기 실제 시작: " + audioPath);
+                    audioManager.startPreview(audioPath);
+                }
+            });
+            delayTimer.setRepeats(false);
+            delayTimer.start();
         } else {
-            previewStatusLabel.setText("오디오 파일 없음: " + currentSong.getTitle());
             System.out.println("미리듣기 파일 없음: " + audioPath);
+            if (previewStatusLabel != null) {
+                previewStatusLabel.setText("오디오 파일 없음: " + currentSong.getTitle());
+            }
         }
     }
 
@@ -577,6 +660,10 @@ public class SongSelectPanel extends JPanel {
         if (audioManager != null) {
             audioManager.stopPreview();
         }
+        // 상태 초기화
+        lastPreviewPath = null;
+        isPreviewPlaying = false;
+        System.out.println("미리듣기 중지");
     }
 
     /**
@@ -669,14 +756,35 @@ public class SongSelectPanel extends JPanel {
      * 패널이 활성화될 때 호출됩니다 (노래 선택 화면 진입 시)
      */
     public void onPanelActivated() {
-        // 노래 선택 화면에 진입했을 때만 미리듣기 시작
-        SwingUtilities.invokeLater(() -> startAutoPreview());
+        // 이미 활성화되어 있으면 중복 호출 방지
+        if (isAutoPreviewEnabled) {
+            System.out.println("노래 선택 화면 이미 활성화됨 - 중복 호출 방지");
+            return;
+        }
+
+        System.out.println("노래 선택 화면 활성화");
+        isAutoPreviewEnabled = true;
+
+        // 미리듣기가 이미 재생 중이 아닐 때만 시작
+        if (!isPreviewPlaying && audioManager != null && !audioManager.isPreviewPlaying()) {
+            // 지연을 두고 미리듣기 시작 (UI 안정화 후)
+            javax.swing.Timer activationTimer = new javax.swing.Timer(500, e -> {
+                if (isAutoPreviewEnabled) {
+                    startAutoPreview();
+                }
+            });
+            activationTimer.setRepeats(false);
+            activationTimer.start();
+        }
     }
 
     /**
      * 패널이 비활성화될 때 호출됩니다 (노래 선택 화면 종료 시)
      */
     public void onPanelDeactivated() {
+        System.out.println("노래 선택 화면 비활성화");
+        // 자동 미리듣기 비활성화
+        isAutoPreviewEnabled = false;
         // 노래 선택 화면을 떠날 때 미리듣기 중지
         stopPreview();
     }
@@ -685,7 +793,12 @@ public class SongSelectPanel extends JPanel {
      * 패널이 닫힐 때 리소스를 정리합니다
      */
     public void cleanup() {
+        System.out.println("SongSelectPanel 정리 시작");
+        isAutoPreviewEnabled = false;
         stopPreview();
         stopPreviewTimer();
+        lastPreviewPath = null;
+        isPreviewPlaying = false;
+        System.out.println("SongSelectPanel 정리 완료");
     }
 }
