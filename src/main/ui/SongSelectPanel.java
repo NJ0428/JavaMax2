@@ -491,9 +491,6 @@ public class SongSelectPanel extends JPanel {
 
         // 난이도 정보 업데이트
         updateDifficultyInfo();
-
-        // 미리듣기 자동 시작 (항상)
-        SwingUtilities.invokeLater(() -> startAutoPreview());
     }
 
     /**
@@ -666,6 +663,22 @@ public class SongSelectPanel extends JPanel {
         g2d.setFont(new Font("Arial", Font.BOLD, 14));
         String indexText = String.format("%d / %d", currentSongIndex + 1, songs.size());
         g2d.drawString(indexText, 50, Constants.WINDOW_HEIGHT - 120);
+    }
+
+    /**
+     * 패널이 활성화될 때 호출됩니다 (노래 선택 화면 진입 시)
+     */
+    public void onPanelActivated() {
+        // 노래 선택 화면에 진입했을 때만 미리듣기 시작
+        SwingUtilities.invokeLater(() -> startAutoPreview());
+    }
+
+    /**
+     * 패널이 비활성화될 때 호출됩니다 (노래 선택 화면 종료 시)
+     */
+    public void onPanelDeactivated() {
+        // 노래 선택 화면을 떠날 때 미리듣기 중지
+        stopPreview();
     }
 
     /**

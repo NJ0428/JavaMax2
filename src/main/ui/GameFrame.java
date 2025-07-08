@@ -156,6 +156,11 @@ public class GameFrame extends JFrame implements KeyListener {
      * 메뉴 화면을 표시합니다
      */
     public void showMenu() {
+        // SongSelectPanel에서 다른 화면으로 전환할 때 미리듣기 중지
+        if (songSelectPanel != null) {
+            songSelectPanel.onPanelDeactivated();
+        }
+
         cardLayout.show(mainPanel, "MENU");
         requestFocus();
     }
@@ -164,6 +169,11 @@ public class GameFrame extends JFrame implements KeyListener {
      * 게임 선택 화면을 표시합니다
      */
     public void showGameSelect() {
+        // SongSelectPanel에서 다른 화면으로 전환할 때 미리듣기 중지
+        if (songSelectPanel != null) {
+            songSelectPanel.onPanelDeactivated();
+        }
+
         cardLayout.show(mainPanel, "GAME_SELECT");
         requestFocus();
     }
@@ -172,7 +182,18 @@ public class GameFrame extends JFrame implements KeyListener {
      * 노래 선택 화면을 표시합니다
      */
     public void showSongSelect() {
+        // 다른 패널에서 SongSelectPanel로 전환할 때 미리듣기 비활성화
+        if (songSelectPanel != null) {
+            songSelectPanel.onPanelDeactivated();
+        }
+
         cardLayout.show(mainPanel, "SONG_SELECT");
+
+        // SongSelectPanel 활성화 및 미리듣기 시작
+        if (songSelectPanel != null) {
+            songSelectPanel.onPanelActivated();
+        }
+
         requestFocus();
     }
 
@@ -180,6 +201,11 @@ public class GameFrame extends JFrame implements KeyListener {
      * 게임 화면을 표시합니다
      */
     public void showGame() {
+        // SongSelectPanel에서 게임 화면으로 전환할 때 미리듣기 중지
+        if (songSelectPanel != null) {
+            songSelectPanel.onPanelDeactivated();
+        }
+
         cardLayout.show(mainPanel, "GAME");
         requestFocus();
     }
@@ -188,6 +214,11 @@ public class GameFrame extends JFrame implements KeyListener {
      * 결과 화면을 표시합니다
      */
     public void showResult() {
+        // SongSelectPanel에서 결과 화면으로 전환할 때 미리듣기 중지
+        if (songSelectPanel != null) {
+            songSelectPanel.onPanelDeactivated();
+        }
+
         resultPanel.updateResult(gameEngine.getScoreManager());
         cardLayout.show(mainPanel, "RESULT");
         requestFocus();
