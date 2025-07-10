@@ -105,10 +105,10 @@ public class GameEngine {
      * 게임을 종료합니다
      */
     public void endGame() {
-        gameState = GameState.RESULT;
+        boolean success = scoreManager.getScore() >= 1000;
+        gameState = success ? GameState.RESULT : GameState.GAME_OVER;
         if (audioManager != null) {
-            // 게임 결과에 따라 다른 사운드 재생
-            if (scoreManager.getScore() >= 1000) { // 성공 기준 (예시)
+            if (success) {
                 audioManager.playGameSuccessSound();
             } else {
                 audioManager.playGameOverSound();
