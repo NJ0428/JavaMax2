@@ -569,13 +569,24 @@ public class SongSelectPanel extends JPanel {
      */
     private void startSelectedSong() {
         if (!songs.isEmpty()) {
-            // 게임 시작 전 미리듣기 중지
+            // 자동 미리듣기 비활성화
+            isAutoPreviewEnabled = false;
+
+            // 게임 시작 전 미리듣기 완전 중지
             stopPreview();
+
+            // 추가 대기 시간으로 미리듣기 완전 중지 보장
+            if (audioManager != null) {
+                audioManager.stopPreview();
+            }
+
+            System.out.println("게임 시작 - 미리듣기 완전 중지 및 자동 미리듣기 비활성화");
 
             Song selectedSong = songs.get(currentSongIndex);
             Song.Difficulty selectedDiff = selectedSong.getDifficulty(selectedDifficulty);
 
             // 선택된 곡과 난이도 정보를 GameFrame에 전달
+            System.out.println("선택된 곡으로 게임 시작: " + selectedSong.getTitle());
             gameFrame.startSongGame(selectedSong, selectedDiff);
         }
     }

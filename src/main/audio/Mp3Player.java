@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.Future;
 
 /**
  * MP3 파일 재생을 위한 클래스
@@ -21,10 +22,22 @@ public class Mp3Player {
     private float volume;
     private static final int MAX_CONCURRENT_SOUNDS = 5; // 동시 재생 제한
 
+    // 배경음악 관련 필드
+    private Player backgroundPlayer;
+    private Future<?> backgroundTask;
+    private boolean isBackgroundPlaying;
+    private boolean isBackgroundPaused;
+    private String currentBackgroundMusic;
+    private String pausedBackgroundMusic; // 일시정지된 배경음악 경로 저장
+
     public Mp3Player() {
         soundPaths = new HashMap<>();
         enabled = true;
         volume = 0.8f;
+        isBackgroundPlaying = false;
+        isBackgroundPaused = false;
+        currentBackgroundMusic = null;
+        pausedBackgroundMusic = null;
 
         // 고정 크기 스레드 풀 사용으로 리소스 제한
         soundExecutor = Executors.newFixedThreadPool(MAX_CONCURRENT_SOUNDS);
@@ -91,6 +104,140 @@ public class Mp3Player {
                 }
             }
         });
+    }
+
+    /**
+     * 배경음악을 재생합니다 (루프 재생)
+     */
+    public void playGameMusic(String filePath) {
+        // 기존 배경음악 정지
+        stopGameMusic();
+
+        if (!enabled) {
+            return;
+        }
+
+        currentBackgroundMusic = filePath;
+        isBackgroundPlaying = true;
+
+        backgroundTask = soundExecutor.submit(() -> {
+            while (isBackgroundPlaying && !Thread.currentThread().isInterrupted()) {
+                FileInputStream fileInputStream = null;
+
+                try {
+                    fileInputStream = new FileInputStream(filePath);
+                    backgroundPlayer = new Player(fileInputStream);
+
+                    System.out.println("배경음악 재생 시작: " + filePath);
+                    backgroundPlayer.play();
+
+                    // 재생이 끝나면 다시 반복 (루프)
+                    if (isBackgroundPlaying) {
+                        System.out.println("배경음악 루프 재생: " + filePath);
+                        Thread.sleep(100); // 짧은 간격
+                    }
+
+                } catch (JavaLayerException | IOException e) {
+                    System.err.println("배경음악 재생 실패: " + filePath + " - " + e.getMessage());
+                    isBackgroundPlaying = false;
+                    break;
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } finally {
+                    if (backgroundPlayer != null) {
+                        backgroundPlayer.close();
+                        backgroundPlayer = null;
+                    }
+                    if (fileInputStream != null) {
+                        try {
+                            fileInputStream.close();
+                        } catch (IOException e) {
+                            System.err.println("파일 스트림 닫기 실패: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+            System.out.println("배경음악 재생 종료: " + filePath);
+        });
+    }
+
+    /**
+     * 배경음악을 정지합니다
+     */
+    public void stopGameMusic() {
+        isBackgroundPlaying = false;
+        isBackgroundPaused = false;
+
+        if (backgroundPlayer != null) {
+            backgroundPlayer.close();
+            backgroundPlayer = null;
+        }
+
+        if (backgroundTask != null && !backgroundTask.isDone()) {
+            backgroundTask.cancel(true);
+            backgroundTask = null;
+        }
+
+        currentBackgroundMusic = null;
+        pausedBackgroundMusic = null;
+        System.out.println("배경음악 정지");
+    }
+
+    /**
+     * 배경음악을 일시정지합니다
+     */
+    public void pauseBackgroundMusic() {
+        if (isBackgroundPlaying && !isBackgroundPaused) {
+            // 현재 재생 중인 배경음악 경로 저장
+            pausedBackgroundMusic = currentBackgroundMusic;
+            isBackgroundPaused = true;
+
+            // 배경음악 정지 (MP3는 일시정지 대신 정지 사용)
+            isBackgroundPlaying = false;
+
+            if (backgroundPlayer != null) {
+                backgroundPlayer.close();
+                backgroundPlayer = null;
+            }
+
+            if (backgroundTask != null && !backgroundTask.isDone()) {
+                backgroundTask.cancel(true);
+                backgroundTask = null;
+            }
+
+            System.out.println("배경음악 일시정지: " + pausedBackgroundMusic);
+        }
+    }
+
+    /**
+     * 배경음악을 재개합니다
+     */
+    public void resumeBackgroundMusic() {
+        if (isBackgroundPaused && pausedBackgroundMusic != null) {
+            System.out.println("배경음악 재개: " + pausedBackgroundMusic);
+
+            // 일시정지된 배경음악 다시 재생
+            String musicPath = pausedBackgroundMusic;
+            isBackgroundPaused = false;
+            pausedBackgroundMusic = null;
+
+            playGameMusic(musicPath);
+        }
+    }
+
+    /**
+     * 배경음악이 재생 중인지 확인합니다
+     */
+    public boolean isBackgroundMusicPlaying() {
+        return isBackgroundPlaying;
+    }
+
+    /**
+     * 현재 재생 중인 배경음악 경로를 반환합니다
+     */
+    public String getCurrentBackgroundMusic() {
+        return currentBackgroundMusic;
     }
 
     /**

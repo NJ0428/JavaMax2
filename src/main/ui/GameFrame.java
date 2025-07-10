@@ -285,13 +285,34 @@ public class GameFrame extends JFrame implements KeyListener {
      * 선택된 곡으로 게임을 시작합니다
      */
     public void startSongGame(Song song, Song.Difficulty difficulty) {
-        // 곡 정보를 GameEngine에 설정 (추후 구현)
+        // 미리듣기 완전히 중지
+        if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
+            RhythmGame.getInstance().getAudioManager().stopPreview();
+            System.out.println("게임 시작 - 미리듣기 중지됨");
+        }
+
+        // 게임 엔진 시작
         gameEngine.startGameWithMode(GameMode.SINGLE_PLAY);
 
-        // 선택된 곡의 배경음악 재생 (현재는 기본 배경음악 사용)
+        // 선택된 곡의 전체 배경음악 재생
         if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
-            System.out.println("게임 시작 - 배경음악 재생: " + (song != null ? song.getTitle() : "기본"));
-            RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic("game_bgm.wav");
+            if (song != null) {
+                String selectedSongPath = song.getAudioPath();
+                System.out.println("게임 시작 - 선택된 곡 전체 재생: " + song.getTitle() + " (" + selectedSongPath + ")");
+
+                // 잠깐 대기 후 배경음악 재생 (미리듣기 완전 중지 대기)
+                javax.swing.Timer delayTimer = new javax.swing.Timer(300, e -> {
+                    if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
+                        RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic(selectedSongPath);
+                        System.out.println("배경음악 재생 시작됨: " + selectedSongPath);
+                    }
+                });
+                delayTimer.setRepeats(false);
+                delayTimer.start();
+            } else {
+                System.out.println("게임 시작 - 곡 정보 없음, 기본 배경음악 재생");
+                RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic("game_bgm.wav");
+            }
         }
 
         showGame();

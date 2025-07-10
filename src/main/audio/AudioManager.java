@@ -214,10 +214,24 @@ public class AudioManager {
                 System.out.println("배경음악 로드: " + musicFile.getAbsolutePath());
 
                 if (filePath.toLowerCase().endsWith(".mp3")) {
-                    // MP3 파일 처리를 위한 대체 방법
-                    System.out.println("MP3 파일 감지됨. 현재 MP3는 지원되지 않습니다.");
-                    System.out.println("WAV 형식으로 변환하시거나 WAV 파일을 사용해주세요.");
-                    return;
+                    // MP3 파일 처리 - Mp3Player를 사용하여 재생
+                    System.out.println("MP3 파일 감지됨. Mp3Player로 재생합니다.");
+                    try {
+                        mp3Player.playGameMusic(musicFile.getAbsolutePath());
+                        System.out.println("MP3 배경음악 재생 시작: " + musicFile.getAbsolutePath());
+                        return;
+                    } catch (Exception e) {
+                        System.err.println("MP3 재생 실패: " + e.getMessage());
+                        System.out.println("기본 배경음악으로 대체 재생합니다.");
+                        // MP3 재생 실패 시 기본 배경음악 재생
+                        File fallbackFile = findMusicFile("game_bgm.wav");
+                        if (fallbackFile != null && fallbackFile.exists()) {
+                            musicFile = fallbackFile;
+                        } else {
+                            System.err.println("기본 배경음악 파일도 찾을 수 없습니다.");
+                            return;
+                        }
+                    }
                 }
 
                 // WAV, AU 등 기본 지원 파일은 기존 방식으로 재생
@@ -230,10 +244,16 @@ public class AudioManager {
 
                 if (musicEnabled) {
                     backgroundMusic.loop(Clip.LOOP_CONTINUOUSLY);
-                    System.out.println("배경음악 재생 시작");
+                    System.out.println("배경음악 재생 시작: " + musicFile.getName());
                 }
             } else {
                 System.err.println("음악 파일을 찾을 수 없습니다: " + filePath);
+                System.out.println("기본 배경음악 재생을 시도합니다.");
+                // 기본 배경음악 재생 시도
+                File fallbackFile = findMusicFile("game_bgm.wav");
+                if (fallbackFile != null && fallbackFile.exists()) {
+                    loadAndPlayBackgroundMusic("game_bgm.wav");
+                }
             }
         } catch (UnsupportedAudioFileException e) {
             System.err.println("지원되지 않는 오디오 형식: " + filePath + " - " + e.getMessage());
@@ -421,32 +441,53 @@ public class AudioManager {
      * 배경음악을 일시정지합니다
      */
     public void pauseBackgroundMusic() {
+        // Clip 타입 배경음악 일시정지
         if (backgroundMusic != null && backgroundMusic.isRunning()) {
             backgroundMusic.stop();
         }
 
+        // MP3 배경음악 일시정지
+        if (mp3Player != null) {
+            mp3Player.pauseBackgroundMusic();
+        }
+
+        System.out.println("배경음악 일시정지");
     }
 
     /**
      * 배경음악을 재개합니다
      */
     public void resumeBackgroundMusic() {
+        // Clip 타입 배경음악 재개
         if (backgroundMusic != null && musicEnabled) {
             backgroundMusic.loop(Clip.LOOP_CONTINUOUSLY);
         }
 
+        // MP3 배경음악 재개
+        if (mp3Player != null) {
+            mp3Player.resumeBackgroundMusic();
+        }
+
+        System.out.println("배경음악 재개");
     }
 
     /**
      * 배경음악을 정지합니다
      */
     public void stopBackgroundMusic() {
+        // Clip 타입 배경음악 정지
         if (backgroundMusic != null) {
             backgroundMusic.stop();
             backgroundMusic.close();
             backgroundMusic = null;
         }
 
+        // MP3 배경음악 정지
+        if (mp3Player != null) {
+            mp3Player.stopGameMusic();
+        }
+
+        System.out.println("배경음악 정지");
     }
 
     /**
