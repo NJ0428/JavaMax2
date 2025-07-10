@@ -26,6 +26,7 @@ public class GameFrame extends JFrame implements KeyListener {
     private GameSelectPanel gameSelectPanel;
     private SongSelectPanel songSelectPanel;
     private ResultPanel resultPanel;
+    private GameOverPanel gameOverPanel;
     private CardLayout cardLayout;
     private JPanel mainPanel;
     private Timer gameTimer;
@@ -79,6 +80,7 @@ public class GameFrame extends JFrame implements KeyListener {
         gamePanel = new GamePanel(gameEngine);
         pausePanel = new PausePanel(this);
         resultPanel = new ResultPanel(this);
+        gameOverPanel = new GameOverPanel();
 
         // PausePanel을 GamePanel에 설정
         gamePanel.setPausePanel(pausePanel);
@@ -89,6 +91,7 @@ public class GameFrame extends JFrame implements KeyListener {
         mainPanel.add(songSelectPanel, "SONG_SELECT");
         mainPanel.add(gamePanel, "GAME");
         mainPanel.add(resultPanel, "RESULT");
+        mainPanel.add(gameOverPanel, "GAME_OVER");
 
         add(mainPanel);
 
@@ -129,6 +132,11 @@ public class GameFrame extends JFrame implements KeyListener {
                 case RESULT:
                     if (!cardLayout.toString().contains("RESULT")) {
                         showResult();
+                    }
+                    break;
+                case GAME_OVER:
+                    if (!cardLayout.toString().contains("GAME_OVER")) {
+                        showGameOver();
                     }
                     break;
             }
@@ -232,6 +240,17 @@ public class GameFrame extends JFrame implements KeyListener {
 
         resultPanel.updateResult(gameEngine.getScoreManager());
         cardLayout.show(mainPanel, "RESULT");
+        requestFocus();
+    }
+
+    /**
+     * 게임 오버 화면을 표시합니다
+     */
+    public void showGameOver() {
+        if (songSelectPanel != null) {
+            songSelectPanel.onPanelDeactivated();
+        }
+        cardLayout.show(mainPanel, "GAME_OVER");
         requestFocus();
     }
 
@@ -404,6 +423,10 @@ public class GameFrame extends JFrame implements KeyListener {
 
         // 결과 화면에서 ENTER 키로 메뉴 복귀
         else if (gameEngine.getGameState() == GameState.RESULT && keyCode == KeyEvent.VK_ENTER) {
+            returnToMenu();
+        }
+        // 게임 오버 화면에서 ENTER 키로 메뉴 복귀
+        else if (gameEngine.getGameState() == GameState.GAME_OVER && keyCode == KeyEvent.VK_ENTER) {
             returnToMenu();
         }
 
