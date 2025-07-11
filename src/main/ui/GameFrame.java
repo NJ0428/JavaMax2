@@ -26,6 +26,8 @@ public class GameFrame extends JFrame implements KeyListener {
     private GameSelectPanel gameSelectPanel;
     private SongSelectPanel songSelectPanel;
     private ResultPanel resultPanel;
+    private Song currentSong; // 현재 플레이 중인 곡
+    private Song.Difficulty currentDifficulty; // 현재 선택된 난이도
     private CardLayout cardLayout;
     private JPanel mainPanel;
     private Timer gameTimer;
@@ -230,6 +232,20 @@ public class GameFrame extends JFrame implements KeyListener {
             songSelectPanel.onPanelDeactivated();
         }
 
+        // 현재 곡/난이도 최고 기록 갱신
+        if (currentSong != null && currentDifficulty != null) {
+            main.game.ScoreManager sm = gameEngine.getScoreManager();
+            int score = sm.getScore();
+            double accuracy = sm.getAccuracy();
+
+            if (score > currentDifficulty.getBestScore()) {
+                currentDifficulty.setBestScore(score);
+            }
+            if (accuracy > currentDifficulty.getBestAccuracy()) {
+                currentDifficulty.setBestAccuracy(accuracy);
+            }
+        }
+
         resultPanel.updateResult(gameEngine.getScoreManager());
         cardLayout.show(mainPanel, "RESULT");
         requestFocus();
@@ -290,6 +306,10 @@ public class GameFrame extends JFrame implements KeyListener {
             RhythmGame.getInstance().getAudioManager().stopPreview();
             System.out.println("게임 시작 - 미리듣기 중지됨");
         }
+
+        // 현재 곡과 난이도 저장
+        this.currentSong = song;
+        this.currentDifficulty = difficulty;
 
         // 게임 엔진 시작
         gameEngine.startGameWithMode(GameMode.SINGLE_PLAY);
