@@ -776,6 +776,9 @@ public class SongSelectPanel extends JPanel {
         System.out.println("노래 선택 화면 활성화");
         isAutoPreviewEnabled = true;
 
+        // 최신 베스트 스코어 정보 반영
+        updateSongDisplay();
+
         // 미리듣기가 이미 재생 중이 아닐 때만 시작
         if (!isPreviewPlaying && audioManager != null && !audioManager.isPreviewPlaying()) {
             // 지연을 두고 미리듣기 시작 (UI 안정화 후)
