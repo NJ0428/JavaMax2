@@ -271,10 +271,10 @@ public class GameFrame extends JFrame implements KeyListener {
             // 다른 모드는 바로 게임 시작
             gameEngine.startGameWithMode(mode);
 
-            // 기본 배경음악 재생 (WAV 파일 사용)
+            // 기본 배경음악 재생 (루프 없이 한 번만)
             if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
-                System.out.println("게임 모드 시작 - 기본 배경음악 재생 시도");
-                RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic("game_bgm.wav");
+                System.out.println("게임 모드 시작 - 기본 배경음악 재생 시도 (루프 없음)");
+                RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic("game_bgm.wav", false);
             }
 
             showGame();
@@ -294,24 +294,25 @@ public class GameFrame extends JFrame implements KeyListener {
         // 게임 엔진 시작
         gameEngine.startGameWithMode(GameMode.SINGLE_PLAY);
 
-        // 선택된 곡의 전체 배경음악 재생
+        // 선택된 곡의 전체 배경음악 재생 (루프 없이 한 번만)
         if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
             if (song != null) {
                 String selectedSongPath = song.getAudioPath();
-                System.out.println("게임 시작 - 선택된 곡 전체 재생: " + song.getTitle() + " (" + selectedSongPath + ")");
+                System.out.println("게임 시작 - 선택된 곡 전체 재생 (루프 없음): " + song.getTitle() + " (" + selectedSongPath + ")");
 
                 // 잠깐 대기 후 배경음악 재생 (미리듣기 완전 중지 대기)
                 javax.swing.Timer delayTimer = new javax.swing.Timer(300, e -> {
                     if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
-                        RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic(selectedSongPath);
-                        System.out.println("배경음악 재생 시작됨: " + selectedSongPath);
+                        // 루프 없이 한 번만 재생
+                        RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic(selectedSongPath, false);
+                        System.out.println("배경음악 재생 시작됨 (루프 없음): " + selectedSongPath);
                     }
                 });
                 delayTimer.setRepeats(false);
                 delayTimer.start();
             } else {
-                System.out.println("게임 시작 - 곡 정보 없음, 기본 배경음악 재생");
-                RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic("game_bgm.wav");
+                System.out.println("게임 시작 - 곡 정보 없음, 기본 배경음악 재생 (루프 없음)");
+                RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic("game_bgm.wav", false);
             }
         }
 
@@ -344,10 +345,10 @@ public class GameFrame extends JFrame implements KeyListener {
         if (currentMode != null) {
             gameEngine.startGameWithMode(currentMode);
 
-            // 배경음악 재시작
+            // 배경음악 재시작 (루프 없이 한 번만)
             if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
-                System.out.println("게임 재시작 - 기본 배경음악 재생");
-                RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic("game_bgm.wav");
+                System.out.println("게임 재시작 - 기본 배경음악 재생 (루프 없음)");
+                RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic("game_bgm.wav", false);
             }
         } else {
             gameEngine.startGame();

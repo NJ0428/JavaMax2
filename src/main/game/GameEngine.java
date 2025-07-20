@@ -36,6 +36,14 @@ public class GameEngine {
      */
     public void setAudioManager(AudioManager audioManager) {
         this.audioManager = audioManager;
+
+        // 게임 음악 종료 리스너 설정
+        if (audioManager != null) {
+            audioManager.setGameMusicEndListener(() -> {
+                System.out.println("게임 음악이 종료되었습니다. 게임을 종료합니다.");
+                endGame();
+            });
+        }
     }
 
     /**

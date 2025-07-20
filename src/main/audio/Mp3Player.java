@@ -29,6 +29,12 @@ public class Mp3Player {
     private boolean isBackgroundPaused;
     private String currentBackgroundMusic;
     private String pausedBackgroundMusic; // 일시정지된 배경음악 경로 저장
+    private MusicEndListener musicEndListener; // 음악 종료 리스너
+
+    // 음악 종료 리스너 인터페이스
+    public interface MusicEndListener {
+        void onMusicEnd();
+    }
 
     public Mp3Player() {
         soundPaths = new HashMap<>();
@@ -107,9 +113,19 @@ public class Mp3Player {
     }
 
     /**
-     * 배경음악을 재생합니다 (루프 재생)
+     * 배경음악을 재생합니다 (한 번만 재생, 루프 없음)
      */
     public void playGameMusic(String filePath) {
+        playGameMusic(filePath, false);
+    }
+
+    /**
+     * 배경음악을 재생합니다
+     * 
+     * @param filePath 재생할 파일 경로
+     * @param loop     루프 재생 여부
+     */
+    public void playGameMusic(String filePath, boolean loop) {
         // 기존 배경음악 정지
         stopGameMusic();
 
@@ -121,6 +137,8 @@ public class Mp3Player {
         isBackgroundPlaying = true;
 
         backgroundTask = soundExecutor.submit(() -> {
+            boolean firstPlay = true;
+
             while (isBackgroundPlaying && !Thread.currentThread().isInterrupted()) {
                 FileInputStream fileInputStream = null;
 
@@ -128,13 +146,35 @@ public class Mp3Player {
                     fileInputStream = new FileInputStream(filePath);
                     backgroundPlayer = new Player(fileInputStream);
 
-                    System.out.println("배경음악 재생 시작: " + filePath);
+                    if (firstPlay) {
+                        System.out.println("배경음악 재생 시작: " + filePath + " (루프: " + loop + ")");
+                        firstPlay = false;
+                    } else {
+                        System.out.println("배경음악 루프 재생: " + filePath);
+                    }
+
                     backgroundPlayer.play();
 
-                    // 재생이 끝나면 다시 반복 (루프)
+                    // 재생이 완료되었을 때 처리
                     if (isBackgroundPlaying) {
-                        System.out.println("배경음악 루프 재생: " + filePath);
-                        Thread.sleep(100); // 짧은 간격
+                        if (loop) {
+                            // 루프 재생인 경우 짧은 간격 후 다시 재생
+                            Thread.sleep(100);
+                        } else {
+                            // 루프가 아닌 경우 음악 종료 알림
+                            System.out.println("배경음악 재생 완료: " + filePath);
+                            isBackgroundPlaying = false;
+
+                            // 음악 종료 리스너 호출
+                            if (musicEndListener != null) {
+                                try {
+                                    musicEndListener.onMusicEnd();
+                                } catch (Exception e) {
+                                    System.err.println("음악 종료 리스너 실행 중 오류: " + e.getMessage());
+                                }
+                            }
+                            break;
+                        }
                     }
 
                 } catch (JavaLayerException | IOException e) {
@@ -306,5 +346,12 @@ public class Mp3Player {
             return ((ThreadPoolExecutor) soundExecutor).getActiveCount();
         }
         return 0;
+    }
+
+    /**
+     * 음악 종료 리스너를 설정합니다
+     */
+    public void setMusicEndListener(MusicEndListener listener) {
+        this.musicEndListener = listener;
     }
 }

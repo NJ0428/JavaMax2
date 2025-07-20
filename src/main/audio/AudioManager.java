@@ -20,6 +20,12 @@ public class AudioManager {
     private float musicVolume;
     private Mp3Player mp3Player; // MP3 재생을 위한 플레이어
     private PreviewPlayer previewPlayer; // 미리듣기 플레이어
+    private GameMusicEndListener gameMusicEndListener; // 게임 음악 종료 리스너
+
+    // 게임 음악 종료 리스너 인터페이스
+    public interface GameMusicEndListener {
+        void onGameMusicEnd();
+    }
 
     public AudioManager() {
         soundEffects = new HashMap<>();
@@ -29,6 +35,13 @@ public class AudioManager {
         musicVolume = 0.7f;
         mp3Player = new Mp3Player();
         previewPlayer = new PreviewPlayer();
+
+        // Mp3Player에 음악 종료 리스너 설정
+        mp3Player.setMusicEndListener(() -> {
+            if (gameMusicEndListener != null) {
+                gameMusicEndListener.onGameMusicEnd();
+            }
+        });
 
         System.out.println("=== AudioManager 초기화 시작 ===");
         loadSoundEffects();
@@ -202,9 +215,19 @@ public class AudioManager {
     }
 
     /**
-     * 배경음악을 로드하고 재생합니다
+     * 배경음악을 로드하고 재생합니다 (루프 재생)
      */
     public void loadAndPlayBackgroundMusic(String filePath) {
+        loadAndPlayBackgroundMusic(filePath, true);
+    }
+
+    /**
+     * 배경음악을 로드하고 재생합니다
+     * 
+     * @param filePath 재생할 파일 경로
+     * @param loop     루프 재생 여부
+     */
+    public void loadAndPlayBackgroundMusic(String filePath, boolean loop) {
         try {
             stopBackgroundMusic(); // 기존 음악 정지
 
@@ -215,9 +238,9 @@ public class AudioManager {
 
                 if (filePath.toLowerCase().endsWith(".mp3")) {
                     // MP3 파일 처리 - Mp3Player를 사용하여 재생
-                    System.out.println("MP3 파일 감지됨. Mp3Player로 재생합니다.");
+                    System.out.println("MP3 파일 감지됨. Mp3Player로 재생합니다. (루프: " + loop + ")");
                     try {
-                        mp3Player.playGameMusic(musicFile.getAbsolutePath());
+                        mp3Player.playGameMusic(musicFile.getAbsolutePath(), loop);
                         System.out.println("MP3 배경음악 재생 시작: " + musicFile.getAbsolutePath());
                         return;
                     } catch (Exception e) {
@@ -777,5 +800,12 @@ public class AudioManager {
      */
     public PreviewPlayer getPreviewPlayer() {
         return previewPlayer;
+    }
+
+    /**
+     * 게임 음악 종료 리스너를 설정합니다
+     */
+    public void setGameMusicEndListener(GameMusicEndListener listener) {
+        this.gameMusicEndListener = listener;
     }
 }
