@@ -4,6 +4,37 @@ package main.game;
  * 노래 정보를 담는 클래스
  */
 public class Song {
+
+    /**
+     * 게임 난이도 enum
+     */
+    public enum Difficulty {
+        EASY("하", 1),
+        NORMAL("중", 3),
+        HARD("상", 5),
+        EXPERT("최상", 8);
+
+        private final String koreanName;
+        private final int level;
+
+        Difficulty(String koreanName, int level) {
+            this.koreanName = koreanName;
+            this.level = level;
+        }
+
+        public String getKoreanName() {
+            return koreanName;
+        }
+
+        public int getLevel() {
+            return level;
+        }
+
+        public String getDisplayName() {
+            return koreanName;
+        }
+    }
+
     private String title; // 곡 제목
     private String artist; // 아티스트
     private String album; // 앨범명
@@ -11,7 +42,7 @@ public class Song {
     private int bpm; // BPM
     private String fileName; // 파일명
     private String thumbnailPath; // 썸네일 경로
-    private Difficulty[] difficulties; // 난이도별 정보
+    private DifficultyInfo[] difficulties; // 난이도별 정보
 
     public Song(String title, String artist, String album, String genre, int bpm, String fileName) {
         this.title = title;
@@ -23,11 +54,11 @@ public class Song {
         this.thumbnailPath = "resources/images/songs/" + fileName.replace(".wav", ".jpg");
 
         // 기본 난이도 설정
-        this.difficulties = new Difficulty[4];
-        this.difficulties[0] = new Difficulty("하", 1, 150);
-        this.difficulties[1] = new Difficulty("중", 3, 250);
-        this.difficulties[2] = new Difficulty("상", 5, 400);
-        this.difficulties[3] = new Difficulty("최상", 8, 650);
+        this.difficulties = new DifficultyInfo[4];
+        this.difficulties[0] = new DifficultyInfo("하", 1, 150);
+        this.difficulties[1] = new DifficultyInfo("중", 3, 250);
+        this.difficulties[2] = new DifficultyInfo("상", 5, 400);
+        this.difficulties[3] = new DifficultyInfo("최상", 8, 650);
     }
 
     // Getters
@@ -68,11 +99,11 @@ public class Song {
         this.thumbnailPath = thumbnailPath;
     }
 
-    public Difficulty[] getDifficulties() {
+    public DifficultyInfo[] getDifficulties() {
         return difficulties;
     }
 
-    public Difficulty getDifficulty(int index) {
+    public DifficultyInfo getDifficulty(int index) {
         return (index >= 0 && index < difficulties.length) ? difficulties[index] : null;
     }
 
@@ -87,14 +118,14 @@ public class Song {
     /**
      * 난이도 정보를 담는 내부 클래스
      */
-    public static class Difficulty {
+    public static class DifficultyInfo {
         private String name; // 난이도 이름
         private int level; // 난이도 레벨
         private int noteCount; // 노트 개수
         private int bestScore; // 최고 점수
         private double bestAccuracy; // 최고 정확도
 
-        public Difficulty(String name, int level, int noteCount) {
+        public DifficultyInfo(String name, int level, int noteCount) {
             this.name = name;
             this.level = level;
             this.noteCount = noteCount;

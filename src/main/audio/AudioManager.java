@@ -21,6 +21,9 @@ public class AudioManager {
     private Mp3Player mp3Player; // MP3 재생을 위한 플레이어
     private PreviewPlayer previewPlayer; // 미리듣기 플레이어
     private GameMusicEndListener gameMusicEndListener; // 게임 음악 종료 리스너
+    private long lastSoundPlayTime = 0; // 마지막 사운드 재생 시간
+    private String lastSoundType = ""; // 마지막 재생된 사운드 타입
+    private static final long SOUND_COOLDOWN = 100; // 사운드 재생 간격 (밀리초)
 
     // 게임 음악 종료 리스너 인터페이스
     public interface GameMusicEndListener {
@@ -175,21 +178,21 @@ public class AudioManager {
     private Clip generateSoundEffect(String name) {
         switch (name) {
             case "click":
-                return SoundGenerator.generateTone(800, 100, 0.7);
+                return SoundGenerator.generateTone(800, 100, 0.5); // 볼륨 감소
             case "button_hover":
-                return SoundGenerator.generateTone(900, 80, 0.8); // Click 소리와 동일
+                return SoundGenerator.generateTone(900, 80, 0.5); // 볼륨 감소
             case "pause":
-                return SoundGenerator.generateTone(300, 200, 0.8);
+                return SoundGenerator.generateTone(300, 200, 0.5); // 볼륨 감소
             case "resume":
-                return SoundGenerator.generateTone(500, 150, 0.8);
+                return SoundGenerator.generateTone(500, 150, 0.5); // 볼륨 감소
             case "confirm":
                 return SoundGenerator.generateConfirmSound();
             case "cancel":
                 return SoundGenerator.generateCancelSound();
             case "menu_select":
-                return SoundGenerator.generateTone(700, 120, 0.6);
+                return SoundGenerator.generateTone(700, 120, 0.4); // 볼륨 감소
             case "menu_back":
-                return SoundGenerator.generateTone(450, 150, 0.6);
+                return SoundGenerator.generateTone(400, 120, 0.4); // 더 낮은 주파수와 볼륨으로 부드럽게
             case "hit":
                 return SoundGenerator.generateTone(440, 100, 0.7);
             case "miss":
@@ -321,16 +324,28 @@ public class AudioManager {
         if (!soundEnabled)
             return;
 
+        // 중복 재생 방지
+        long currentTime = System.currentTimeMillis();
+        if (name.equals(lastSoundType) && (currentTime - lastSoundPlayTime) < SOUND_COOLDOWN) {
+            System.out.println("사운드 재생 쿨다운 중: " + name);
+            return;
+        }
+
+        lastSoundType = name;
+        lastSoundPlayTime = currentTime;
+
         Clip clip = soundEffects.get(name);
         if (clip != null) {
             try {
-                // 이미 재생 중이면 정지
-                if (clip.isRunning()) {
-                    clip.stop();
+                // 동시 재생 방지를 위한 동기화
+                synchronized (clip) {
+                    if (clip.isRunning()) {
+                        clip.stop();
+                        Thread.sleep(10); // 짧은 대기
+                    }
+                    clip.setFramePosition(0);
+                    clip.start();
                 }
-                // 클립을 처음부터 재생
-                clip.setFramePosition(0);
-                clip.start();
 
                 // 디버그 메시지
                 System.out.println("사운드 재생: " + name);
@@ -364,6 +379,16 @@ public class AudioManager {
      */
     public void playUISound(String soundType) {
         System.out.println("UI 사운드 재생 요청: " + soundType);
+
+        // 중복 재생 방지 (같은 사운드가 너무 빠르게 연속 재생되는 것을 방지)
+        long currentTime = System.currentTimeMillis();
+        if (soundType.equals(lastSoundType) && (currentTime - lastSoundPlayTime) < SOUND_COOLDOWN) {
+            System.out.println("사운드 재생 쿨다운 중: " + soundType);
+            return;
+        }
+
+        lastSoundType = soundType;
+        lastSoundPlayTime = currentTime;
 
         // 먼저 기본 사운드 시스템 시도
         boolean soundPlayed = false;
@@ -410,10 +435,10 @@ public class AudioManager {
                 break;
         }
 
-        // 기본 사운드가 재생되지 않으면 대체 시스템 사용
+        // 기본 사운드가 재생되지 않으면 조용히 실패 처리 (비프음 방지)
         if (!soundPlayed) {
-            System.out.println("기본 사운드 실패, 대체 시스템 사용");
-            SimpleSoundPlayer.playSoundAsync(soundType);
+            System.out.println("사운드 재생 실패: " + soundType + " (조용히 처리됨)");
+            // SimpleSoundPlayer.playSoundAsync(soundType); // 비프음 방지를 위해 주석 처리
         }
     }
 
@@ -427,11 +452,16 @@ public class AudioManager {
         Clip clip = soundEffects.get(name);
         if (clip != null) {
             try {
-                if (clip.isRunning()) {
-                    clip.stop();
+                // 동시 재생 방지를 위한 동기화
+                synchronized (clip) {
+                    if (clip.isRunning()) {
+                        clip.stop();
+                        // 짧은 대기 시간으로 클립이 완전히 정지되도록 함
+                        Thread.sleep(10);
+                    }
+                    clip.setFramePosition(0);
+                    clip.start();
                 }
-                clip.setFramePosition(0);
-                clip.start();
                 System.out.println("사운드 재생 성공: " + name);
                 return true;
             } catch (Exception e) {

@@ -20,6 +20,7 @@ public class GameEngine {
     private int noteSpawnTimer;
     private int noteSpawnInterval;
     private AudioManager audioManager;
+    private main.game.Story currentStory; // 현재 진행 중인 스토리
 
     public GameEngine() {
         notes = new ArrayList<>();
@@ -114,6 +115,16 @@ public class GameEngine {
      */
     public void endGame() {
         gameState = GameState.RESULT;
+
+        // 스토리 모드인 경우 스토리 완료 처리
+        if (currentGameMode == GameMode.STORY_MODE && currentStory != null) {
+            int finalScore = scoreManager.getScore();
+            StoryManager.getInstance().completeStory(currentStory.getStoryId(), finalScore);
+
+            System.out.println("스토리 완료 처리: " + currentStory.getTitle() +
+                    " (점수: " + finalScore + "/" + currentStory.getRequiredScore() + ")");
+        }
+
         if (audioManager != null) {
             // 게임 결과에 따라 다른 사운드 재생
             if (scoreManager.getScore() >= 1000) { // 성공 기준 (예시)
@@ -289,5 +300,19 @@ public class GameEngine {
 
     public void setGameState(GameState state) {
         this.gameState = state;
+    }
+
+    /**
+     * 현재 스토리를 설정합니다
+     */
+    public void setCurrentStory(main.game.Story story) {
+        this.currentStory = story;
+    }
+
+    /**
+     * 현재 스토리를 반환합니다
+     */
+    public main.game.Story getCurrentStory() {
+        return currentStory;
     }
 }

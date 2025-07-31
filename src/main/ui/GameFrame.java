@@ -26,6 +26,8 @@ public class GameFrame extends JFrame implements KeyListener {
     private GameSelectPanel gameSelectPanel;
     private SongSelectPanel songSelectPanel;
     private ResultPanel resultPanel;
+    private StorySelectPanel storySelectPanel;
+    private StoryDialoguePanel storyDialoguePanel;
     private CardLayout cardLayout;
     private JPanel mainPanel;
     private Timer gameTimer;
@@ -79,6 +81,8 @@ public class GameFrame extends JFrame implements KeyListener {
         gamePanel = new GamePanel(gameEngine);
         pausePanel = new PausePanel(this);
         resultPanel = new ResultPanel(this);
+        storySelectPanel = new StorySelectPanel(this);
+        storyDialoguePanel = new StoryDialoguePanel(this);
 
         // PausePanel을 GamePanel에 설정
         gamePanel.setPausePanel(pausePanel);
@@ -89,6 +93,8 @@ public class GameFrame extends JFrame implements KeyListener {
         mainPanel.add(songSelectPanel, "SONG_SELECT");
         mainPanel.add(gamePanel, "GAME");
         mainPanel.add(resultPanel, "RESULT");
+        mainPanel.add(storySelectPanel, "STORY_SELECT");
+        mainPanel.add(storyDialoguePanel, "STORY_DIALOGUE");
 
         add(mainPanel);
 
@@ -282,9 +288,115 @@ public class GameFrame extends JFrame implements KeyListener {
     }
 
     /**
+     * 스토리 선택 화면을 표시합니다
+     */
+    public void showStorySelect() {
+        // SongSelectPanel에서 다른 화면으로 전환할 때 미리듣기 중지
+        if (songSelectPanel != null && "SONG_SELECT".equals(currentPanelName)) {
+            songSelectPanel.onPanelDeactivated();
+        }
+
+        currentPanelName = "STORY_SELECT";
+        cardLayout.show(mainPanel, "STORY_SELECT");
+
+        // StorySelectPanel 활성화
+        if (storySelectPanel != null) {
+            storySelectPanel.onPanelActivated();
+        }
+
+        requestFocus();
+    }
+
+    /**
+     * 스토리 대화 화면을 표시합니다
+     */
+    public void showStoryDialogue(main.game.Story story, boolean beforeGame) {
+        currentPanelName = "STORY_DIALOGUE";
+        cardLayout.show(mainPanel, "STORY_DIALOGUE");
+
+        if (storyDialoguePanel != null) {
+            storyDialoguePanel.startDialogue(story, beforeGame);
+        }
+
+        requestFocus();
+    }
+
+    /**
+     * 스토리 게임을 시작합니다
+     */
+    public void startStoryGame(main.game.Story story) {
+        // 게임 엔진에 현재 스토리 설정
+        gameEngine.setCurrentStory(story);
+
+        // 게임 엔진을 스토리 모드로 시작
+        gameEngine.startGameWithMode(GameMode.STORY_MODE);
+
+        // 스토리의 곡 배경음악 재생 (루프 없이 한 번만)
+        if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
+            if (story != null && story.getSong() != null) {
+                String songPath = story.getSong().getAudioPath();
+                System.out.println("스토리 게임 시작 - 곡 재생 (루프 없음): " + story.getTitle() + " (" + songPath + ")");
+
+                // 잠깐 대기 후 배경음악 재생
+                javax.swing.Timer delayTimer = new javax.swing.Timer(300, e -> {
+                    if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
+                        RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic(songPath, false);
+                        System.out.println("스토리 배경음악 재생 시작됨 (루프 없음): " + songPath);
+                    }
+                });
+                delayTimer.setRepeats(false);
+                delayTimer.start();
+            } else {
+                System.out.println("스토리 게임 시작 - 기본 배경음악 재생 (루프 없음)");
+                RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic("game_bgm.wav", false);
+            }
+        }
+
+        showGame();
+    }
+
+    /**
      * 선택된 곡으로 게임을 시작합니다
      */
     public void startSongGame(Song song, Song.Difficulty difficulty) {
+        // 미리듣기 완전히 중지
+        if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
+            RhythmGame.getInstance().getAudioManager().stopPreview();
+            System.out.println("게임 시작 - 미리듣기 중지됨");
+        }
+
+        // 게임 엔진 시작
+        gameEngine.startGameWithMode(GameMode.SINGLE_PLAY);
+
+        // 선택된 곡의 전체 배경음악 재생 (루프 없이 한 번만)
+        if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
+            if (song != null) {
+                String selectedSongPath = song.getAudioPath();
+                System.out.println("게임 시작 - 선택된 곡 전체 재생 (루프 없음): " + song.getTitle() + " (" + selectedSongPath + ")");
+
+                // 잠깐 대기 후 배경음악 재생 (미리듣기 완전 중지 대기)
+                javax.swing.Timer delayTimer = new javax.swing.Timer(300, e -> {
+                    if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
+                        // 루프 없이 한 번만 재생
+                        RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic(selectedSongPath, false);
+                        System.out.println("배경음악 재생 시작됨 (루프 없음): " + selectedSongPath);
+                    }
+                });
+                delayTimer.setRepeats(false);
+                delayTimer.start();
+            } else {
+                System.out.println("게임 시작 - 곡 정보 없음, 기본 배경음악 재생 (루프 없음)");
+                RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic("game_bgm.wav", false);
+            }
+        }
+
+        showGame();
+    }
+
+    /**
+     * 선택된 곡으로 게임을 시작합니다
+     */
+    public void startSongGame(Song song, Song.DifficultyInfo difficulty) {
         // 미리듣기 완전히 중지
         if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
             RhythmGame.getInstance().getAudioManager().stopPreview();

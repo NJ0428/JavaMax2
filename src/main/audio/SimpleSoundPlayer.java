@@ -10,15 +10,16 @@ public class SimpleSoundPlayer {
     private static boolean enabled = true;
 
     /**
-     * 시스템 비프음을 재생합니다
+     * 시스템 비프음을 재생합니다 (비활성화됨 - 소리 깨짐 방지)
      */
     public static void playBeep() {
         if (enabled) {
             try {
-                Toolkit.getDefaultToolkit().beep();
-                System.out.println("시스템 비프음 재생");
+                // 비프음 대신 조용한 로그만 출력
+                System.out.println("사운드 재생 요청 (조용히 처리됨)");
+                // Toolkit.getDefaultToolkit().beep(); // 비프음 비활성화
             } catch (Exception e) {
-                System.err.println("비프음 재생 실패: " + e.getMessage());
+                System.err.println("사운드 처리 실패: " + e.getMessage());
             }
         }
     }

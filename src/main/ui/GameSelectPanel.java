@@ -74,9 +74,14 @@ public class GameSelectPanel extends JPanel {
             button.addActionListener(e -> {
                 gameFrame.getAudioManager().playClickSound();
                 selectMode(mode);
-                // 싱글 플레이는 바로 노래 선택 화면으로 이동
+                // 모드별 화면 이동
                 if (mode == GameMode.SINGLE_PLAY) {
                     gameFrame.showSongSelectScreen();
+                } else if (mode == GameMode.STORY_MODE) {
+                    gameFrame.showStorySelect();
+                } else {
+                    // 다른 모드들은 바로 게임 시작
+                    gameFrame.startGameWithMode(mode);
                 }
             });
             button.addMouseListener(new MouseAdapter() {

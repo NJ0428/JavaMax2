@@ -553,7 +553,7 @@ public class SongSelectPanel extends JPanel {
             return;
 
         Song currentSong = songs.get(currentSongIndex);
-        Song.Difficulty difficulty = currentSong.getDifficulty(selectedDifficulty);
+        Song.DifficultyInfo difficulty = currentSong.getDifficulty(selectedDifficulty);
 
         if (difficulty != null) {
             difficultyInfoLabel.setText("<html><center><b>선택된 난이도:</b><br>" +
@@ -583,7 +583,7 @@ public class SongSelectPanel extends JPanel {
             System.out.println("게임 시작 - 미리듣기 완전 중지 및 자동 미리듣기 비활성화");
 
             Song selectedSong = songs.get(currentSongIndex);
-            Song.Difficulty selectedDiff = selectedSong.getDifficulty(selectedDifficulty);
+            Song.DifficultyInfo selectedDiff = selectedSong.getDifficulty(selectedDifficulty);
 
             // 선택된 곡과 난이도 정보를 GameFrame에 전달
             System.out.println("선택된 곡으로 게임 시작: " + selectedSong.getTitle());

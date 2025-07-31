@@ -27,6 +27,20 @@ public class ResultPanel extends JPanel {
      */
     public void updateResult(ScoreManager scoreManager) {
         this.scoreManager = scoreManager;
+
+        // 스토리 모드인 경우 완료 후 대화 화면으로 이동 준비
+        if (gameFrame.getGameEngine().getCurrentGameMode() == main.game.GameMode.STORY_MODE) {
+            main.game.Story currentStory = gameFrame.getGameEngine().getCurrentStory();
+            if (currentStory != null) {
+                // 2초 후 스토리 완료 대화 화면으로 이동
+                Timer delayTimer = new Timer(2000, e -> {
+                    gameFrame.showStoryDialogue(currentStory, false); // false = 게임 완료 후 대화
+                });
+                delayTimer.setRepeats(false);
+                delayTimer.start();
+            }
+        }
+
         repaint();
     }
 
