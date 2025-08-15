@@ -59,17 +59,73 @@ public class StorySelectPanel extends JPanel {
      */
     private void initializeComponents() {
         // 제목
-        titleLabel = new JLabel("스토리 모드", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 32));
-        titleLabel.setForeground(Color.WHITE);
-        titleLabel.setBounds(0, 20, Constants.WINDOW_WIDTH, 50);
+        titleLabel = new JLabel("스토리 모드", SwingConstants.CENTER) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+                // 텍스트 그림자
+                g2d.setColor(new Color(0, 0, 0, 100));
+                g2d.setFont(getFont());
+                FontMetrics fm = g2d.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(getText())) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2d.drawString(getText(), x + 2, y + 2);
+
+                // 메인 텍스트
+                g2d.setColor(getForeground());
+                g2d.drawString(getText(), x, y);
+
+                g2d.dispose();
+            }
+        };
+        titleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 36));
+        titleLabel.setForeground(new Color(255, 255, 255));
+        titleLabel.setBounds(0, 15, Constants.WINDOW_WIDTH, 60);
         add(titleLabel);
 
         // 진행률 표시
-        progressLabel = new JLabel("", SwingConstants.CENTER);
+        progressLabel = new JLabel("", SwingConstants.CENTER) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // 진행률 바 배경
+                int barWidth = 300;
+                int barHeight = 8;
+                int barX = (getWidth() - barWidth) / 2;
+                int barY = getHeight() / 2 + 10;
+
+                g2d.setColor(new Color(40, 40, 60));
+                g2d.fillRoundRect(barX, barY, barWidth, barHeight, 4, 4);
+
+                // 진행률 바
+                double progress = main.game.StoryManager.getInstance().getProgressRate();
+                int progressWidth = (int) (barWidth * progress);
+
+                GradientPaint progressGradient = new GradientPaint(
+                        barX, barY, new Color(100, 200, 255),
+                        barX + progressWidth, barY, new Color(50, 150, 255));
+                g2d.setPaint(progressGradient);
+                g2d.fillRoundRect(barX, barY, progressWidth, barHeight, 4, 4);
+
+                // 텍스트
+                g2d.setColor(getForeground());
+                g2d.setFont(getFont());
+                FontMetrics fm = g2d.getFontMetrics();
+                int textX = (getWidth() - fm.stringWidth(getText())) / 2;
+                int textY = getHeight() / 2 - 5;
+                g2d.drawString(getText(), textX, textY);
+
+                g2d.dispose();
+            }
+        };
         progressLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
-        progressLabel.setForeground(Color.LIGHT_GRAY);
-        progressLabel.setBounds(0, 70, Constants.WINDOW_WIDTH, 30);
+        progressLabel.setForeground(new Color(200, 200, 220));
+        progressLabel.setBounds(0, 75, Constants.WINDOW_WIDTH, 40);
         updateProgressLabel();
         add(progressLabel);
 
@@ -89,61 +145,207 @@ public class StorySelectPanel extends JPanel {
     private void createStoryListPanel() {
         storyListPanel = new JPanel();
         storyListPanel.setLayout(new BoxLayout(storyListPanel, BoxLayout.Y_AXIS));
-        storyListPanel.setBackground(new Color(30, 30, 50));
+        storyListPanel.setOpaque(false);
+
+        // 스크롤 패널을 감싸는 컨테이너
+        JPanel scrollContainer = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // 그림자 효과
+                g2d.setColor(new Color(0, 0, 0, 60));
+                g2d.fillRoundRect(3, 3, getWidth() - 3, getHeight() - 3, 15, 15);
+
+                // 메인 배경
+                GradientPaint gradient = new GradientPaint(
+                        0, 0, new Color(40, 40, 70),
+                        0, getHeight(), new Color(25, 25, 50));
+                g2d.setPaint(gradient);
+                g2d.fillRoundRect(0, 0, getWidth() - 3, getHeight() - 3, 15, 15);
+
+                // 테두리
+                g2d.setColor(new Color(100, 100, 150, 120));
+                g2d.setStroke(new BasicStroke(2));
+                g2d.drawRoundRect(1, 1, getWidth() - 5, getHeight() - 5, 15, 15);
+
+                g2d.dispose();
+            }
+        };
+        scrollContainer.setLayout(new BorderLayout());
+        scrollContainer.setBounds(50, 120, 400, 400);
+        scrollContainer.setOpaque(false);
 
         scrollPane = new JScrollPane(storyListPanel);
-        scrollPane.setBounds(50, 120, 400, 400);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.getViewport().setBackground(new Color(30, 30, 50));
-        add(scrollPane);
+
+        // 스크롤바 스타일링
+        scrollPane.getVerticalScrollBar().setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                this.thumbColor = new Color(80, 80, 120);
+                this.trackColor = new Color(40, 40, 60);
+            }
+
+            @Override
+            protected JButton createDecreaseButton(int orientation) {
+                return createZeroButton();
+            }
+
+            @Override
+            protected JButton createIncreaseButton(int orientation) {
+                return createZeroButton();
+            }
+
+            private JButton createZeroButton() {
+                JButton button = new JButton();
+                button.setPreferredSize(new Dimension(0, 0));
+                button.setMinimumSize(new Dimension(0, 0));
+                button.setMaximumSize(new Dimension(0, 0));
+                return button;
+            }
+        });
+
+        scrollContainer.add(scrollPane, BorderLayout.CENTER);
+        add(scrollContainer);
     }
 
     /**
      * 스토리 정보 패널을 생성합니다
      */
     private void createStoryInfoPanel() {
-        storyInfoPanel = new JPanel();
+        storyInfoPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // 그림자 효과
+                g2d.setColor(new Color(0, 0, 0, 80));
+                g2d.fillRoundRect(5, 5, getWidth() - 5, getHeight() - 5, 20, 20);
+
+                // 메인 배경 그라디언트
+                GradientPaint gradient = new GradientPaint(
+                        0, 0, new Color(50, 50, 80),
+                        0, getHeight(), new Color(30, 30, 60));
+                g2d.setPaint(gradient);
+                g2d.fillRoundRect(0, 0, getWidth() - 5, getHeight() - 5, 20, 20);
+
+                // 테두리
+                g2d.setColor(new Color(120, 120, 180, 150));
+                g2d.setStroke(new BasicStroke(2));
+                g2d.drawRoundRect(1, 1, getWidth() - 7, getHeight() - 7, 20, 20);
+
+                // 내부 하이라이트
+                g2d.setColor(new Color(255, 255, 255, 15));
+                g2d.fillRoundRect(3, 3, getWidth() - 11, getHeight() / 4, 15, 15);
+
+                g2d.dispose();
+            }
+        };
         storyInfoPanel.setLayout(null);
         storyInfoPanel.setBounds(480, 120, 450, 400);
-        storyInfoPanel.setBackground(new Color(40, 40, 60));
-        storyInfoPanel.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 150), 2));
+        storyInfoPanel.setOpaque(false);
 
         // 스토리 제목
         storyTitleLabel = new JLabel("스토리 제목");
-        storyTitleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 20));
-        storyTitleLabel.setForeground(Color.WHITE);
-        storyTitleLabel.setBounds(20, 20, 410, 30);
+        storyTitleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 22));
+        storyTitleLabel.setForeground(new Color(255, 255, 255));
+        storyTitleLabel.setBounds(25, 25, 400, 35);
         storyInfoPanel.add(storyTitleLabel);
 
         // 스토리 설명
         storyDescLabel = new JLabel("<html>스토리 설명</html>");
-        storyDescLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 14));
-        storyDescLabel.setForeground(Color.LIGHT_GRAY);
-        storyDescLabel.setBounds(20, 60, 410, 40);
+        storyDescLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 15));
+        storyDescLabel.setForeground(new Color(200, 200, 220));
+        storyDescLabel.setBounds(25, 70, 400, 45);
         storyInfoPanel.add(storyDescLabel);
 
-        // 요구사항
-        storyRequirementLabel = new JLabel("요구사항: ");
-        storyRequirementLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
-        storyRequirementLabel.setForeground(Color.YELLOW);
-        storyRequirementLabel.setBounds(20, 110, 410, 20);
-        storyInfoPanel.add(storyRequirementLabel);
+        // 요구사항 패널
+        JPanel requirementPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // 대화 내용
+                // 요구사항 배경
+                g2d.setColor(new Color(80, 60, 40, 100));
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+
+                // 요구사항 테두리
+                g2d.setColor(new Color(255, 215, 0, 150));
+                g2d.setStroke(new BasicStroke(1));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+
+                g2d.dispose();
+            }
+        };
+        requirementPanel.setLayout(new BorderLayout());
+        requirementPanel.setBounds(25, 125, 400, 30);
+        requirementPanel.setOpaque(false);
+
+        storyRequirementLabel = new JLabel("요구사항: ");
+        storyRequirementLabel.setFont(new Font("맑은 고딕", Font.BOLD, 13));
+        storyRequirementLabel.setForeground(new Color(255, 215, 0));
+        storyRequirementLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        requirementPanel.add(storyRequirementLabel, BorderLayout.CENTER);
+        storyInfoPanel.add(requirementPanel);
+
+        // 대화 내용 패널
+        JPanel dialoguePanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // 대화 패널 배경
+                g2d.setColor(new Color(25, 25, 45));
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+
+                // 대화 패널 테두리
+                g2d.setColor(new Color(100, 150, 200, 100));
+                g2d.setStroke(new BasicStroke(1));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+
+                g2d.dispose();
+            }
+        };
+        dialoguePanel.setLayout(new BorderLayout());
+        dialoguePanel.setBounds(25, 170, 400, 200);
+        dialoguePanel.setOpaque(false);
+
         storyDialogueArea = new JTextArea();
-        storyDialogueArea.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
-        storyDialogueArea.setForeground(Color.WHITE);
-        storyDialogueArea.setBackground(new Color(20, 20, 40));
+        storyDialogueArea.setFont(new Font("맑은 고딕", Font.PLAIN, 13));
+        storyDialogueArea.setForeground(new Color(220, 220, 240));
+        storyDialogueArea.setBackground(new Color(25, 25, 45));
         storyDialogueArea.setEditable(false);
         storyDialogueArea.setLineWrap(true);
         storyDialogueArea.setWrapStyleWord(true);
-        storyDialogueArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        storyDialogueArea.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         JScrollPane dialogueScrollPane = new JScrollPane(storyDialogueArea);
-        dialogueScrollPane.setBounds(20, 140, 410, 200);
+        dialogueScrollPane.setOpaque(false);
+        dialogueScrollPane.getViewport().setOpaque(false);
+        dialogueScrollPane.setBorder(null);
         dialogueScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        storyInfoPanel.add(dialogueScrollPane);
+        dialogueScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        // 스크롤바 스타일링
+        dialogueScrollPane.getVerticalScrollBar().setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                this.thumbColor = new Color(100, 100, 150);
+                this.trackColor = new Color(40, 40, 60);
+            }
+        });
+
+        dialoguePanel.add(dialogueScrollPane, BorderLayout.CENTER);
+        storyInfoPanel.add(dialoguePanel);
 
         add(storyInfoPanel);
     }
@@ -153,9 +355,8 @@ public class StorySelectPanel extends JPanel {
      */
     private void createButtons() {
         // 뒤로가기 버튼
-        backButton = new JButton("뒤로가기");
-        backButton.setBounds(50, 550, 120, 40);
-        backButton.setFont(new Font("맑은 고딕", Font.BOLD, 14));
+        backButton = createStyledButton("뒤로가기", new Color(80, 80, 120), new Color(100, 100, 140));
+        backButton.setBounds(50, 550, 140, 50);
         backButton.addActionListener(e -> {
             if (gameFrame.getAudioManager() != null) {
                 gameFrame.getAudioManager().playUISound("menu_back");
@@ -165,9 +366,8 @@ public class StorySelectPanel extends JPanel {
         add(backButton);
 
         // 시작 버튼
-        startButton = new JButton("스토리 시작");
-        startButton.setBounds(810, 550, 120, 40);
-        startButton.setFont(new Font("맑은 고딕", Font.BOLD, 14));
+        startButton = createStyledButton("스토리 시작", new Color(120, 80, 80), new Color(140, 100, 100));
+        startButton.setBounds(790, 550, 140, 50);
         startButton.addActionListener(e -> {
             if (gameFrame.getAudioManager() != null) {
                 gameFrame.getAudioManager().playUISound("confirm");
@@ -175,6 +375,74 @@ public class StorySelectPanel extends JPanel {
             startSelectedStory();
         });
         add(startButton);
+    }
+
+    /**
+     * 스타일이 적용된 버튼을 생성합니다
+     */
+    private JButton createStyledButton(String text, Color baseColor, Color hoverColor) {
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // 버튼 상태에 따른 색상 결정
+                Color currentColor = baseColor;
+                if (!isEnabled()) {
+                    currentColor = new Color(60, 60, 60);
+                } else if (getModel().isPressed()) {
+                    currentColor = new Color(baseColor.getRed() - 20, baseColor.getGreen() - 20,
+                            baseColor.getBlue() - 20);
+                } else if (getModel().isRollover()) {
+                    currentColor = hoverColor;
+                }
+
+                // 그라디언트 배경
+                GradientPaint gradient = new GradientPaint(
+                        0, 0, currentColor,
+                        0, getHeight(), new Color(currentColor.getRed() - 30, currentColor.getGreen() - 30,
+                                currentColor.getBlue() - 30));
+                g2d.setPaint(gradient);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+
+                // 테두리
+                g2d.setColor(isEnabled() ? new Color(200, 200, 255, 100) : new Color(100, 100, 100, 100));
+                g2d.setStroke(new BasicStroke(2));
+                g2d.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 15, 15);
+
+                // 내부 하이라이트
+                if (isEnabled()) {
+                    g2d.setColor(new Color(255, 255, 255, 30));
+                    g2d.fillRoundRect(3, 3, getWidth() - 6, getHeight() / 2, 10, 10);
+                }
+
+                // 텍스트
+                g2d.setColor(isEnabled() ? Color.WHITE : Color.GRAY);
+                g2d.setFont(new Font("맑은 고딕", Font.BOLD, 16));
+                FontMetrics fm = g2d.getFontMetrics();
+                int textX = (getWidth() - fm.stringWidth(getText())) / 2;
+                int textY = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2d.drawString(getText(), textX, textY);
+
+                g2d.dispose();
+            }
+
+            @Override
+            public void setEnabled(boolean enabled) {
+                super.setEnabled(enabled);
+                repaint();
+            }
+        };
+
+        button.setFont(new Font("맑은 고딕", Font.BOLD, 16));
+        button.setForeground(Color.WHITE);
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        return button;
     }
 
     /**
@@ -200,19 +468,57 @@ public class StorySelectPanel extends JPanel {
      * 개별 스토리 아이템을 생성합니다
      */
     private JPanel createStoryItem(Story story, int index) {
-        JPanel item = new JPanel();
-        item.setLayout(new BorderLayout());
-        item.setPreferredSize(new Dimension(380, 80));
-        item.setMaximumSize(new Dimension(380, 80));
+        JPanel item = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // 선택된 아이템과 일반 아이템 구분
-        if (index == selectedStoryIndex) {
-            item.setBackground(new Color(70, 70, 120));
-            item.setBorder(BorderFactory.createLineBorder(Color.YELLOW, 2));
-        } else {
-            item.setBackground(new Color(50, 50, 80));
-            item.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 150), 1));
-        }
+                // 배경 그라디언트
+                Color baseColor;
+                Color shadowColor;
+
+                if (index == selectedStoryIndex) {
+                    baseColor = new Color(90, 90, 140);
+                    shadowColor = new Color(70, 70, 120);
+                } else {
+                    baseColor = new Color(60, 60, 90);
+                    shadowColor = new Color(40, 40, 70);
+                }
+
+                // 그림자 효과
+                g2d.setColor(new Color(0, 0, 0, 50));
+                g2d.fillRoundRect(3, 3, getWidth() - 3, getHeight() - 3, 12, 12);
+
+                // 메인 배경
+                GradientPaint gradient = new GradientPaint(
+                        0, 0, baseColor,
+                        0, getHeight(), shadowColor);
+                g2d.setPaint(gradient);
+                g2d.fillRoundRect(0, 0, getWidth() - 3, getHeight() - 3, 12, 12);
+
+                // 테두리
+                if (index == selectedStoryIndex) {
+                    g2d.setColor(new Color(255, 215, 0, 200)); // 골드 색상
+                    g2d.setStroke(new BasicStroke(3));
+                } else {
+                    g2d.setColor(new Color(120, 120, 180, 100));
+                    g2d.setStroke(new BasicStroke(1));
+                }
+                g2d.drawRoundRect(1, 1, getWidth() - 5, getHeight() - 5, 12, 12);
+
+                // 내부 하이라이트
+                g2d.setColor(new Color(255, 255, 255, 20));
+                g2d.fillRoundRect(3, 3, getWidth() - 9, getHeight() / 3, 8, 8);
+
+                g2d.dispose();
+            }
+        };
+
+        item.setLayout(new BorderLayout());
+        item.setPreferredSize(new Dimension(380, 85));
+        item.setMaximumSize(new Dimension(380, 85));
+        item.setOpaque(false);
 
         // 스토리 정보 패널
         JPanel infoPanel = new JPanel(new BorderLayout());
@@ -220,26 +526,50 @@ public class StorySelectPanel extends JPanel {
 
         // 제목과 상태
         JLabel titleLabel = new JLabel(story.getTitle());
-        titleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 16));
+        titleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 18));
         titleLabel.setForeground(Color.WHITE);
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 15, 5, 15));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(12, 18, 5, 15));
 
-        JLabel statusLabel = new JLabel(story.isCompleted() ? "완료됨" : "진행 가능");
-        statusLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
-        statusLabel.setForeground(story.isCompleted() ? Color.GREEN : Color.CYAN);
-        statusLabel.setBorder(BorderFactory.createEmptyBorder(0, 15, 10, 15));
+        JLabel statusLabel = new JLabel(story.isCompleted() ? "✓ 완료됨" : "▶ 진행 가능");
+        statusLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 13));
+        statusLabel.setForeground(story.isCompleted() ? new Color(100, 255, 100) : new Color(100, 200, 255));
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(0, 18, 12, 15));
 
         infoPanel.add(titleLabel, BorderLayout.NORTH);
         infoPanel.add(statusLabel, BorderLayout.SOUTH);
 
-        // 난이도 표시
-        JLabel difficultyLabel = new JLabel(story.getRequiredDifficulty().getDisplayName());
-        difficultyLabel.setFont(new Font("맑은 고딕", Font.BOLD, 12));
+        // 난이도 표시 패널
+        JPanel difficultyPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                Color diffColor = getDifficultyColor(story.getRequiredDifficulty());
+
+                // 난이도 배경
+                g2d.setColor(new Color(diffColor.getRed(), diffColor.getGreen(), diffColor.getBlue(), 30));
+                g2d.fillRoundRect(5, 15, getWidth() - 15, getHeight() - 30, 8, 8);
+
+                // 난이도 테두리
+                g2d.setColor(diffColor);
+                g2d.setStroke(new BasicStroke(2));
+                g2d.drawRoundRect(5, 15, getWidth() - 15, getHeight() - 30, 8, 8);
+
+                g2d.dispose();
+            }
+        };
+        difficultyPanel.setLayout(new BorderLayout());
+        difficultyPanel.setOpaque(false);
+        difficultyPanel.setPreferredSize(new Dimension(80, 85));
+
+        JLabel difficultyLabel = new JLabel(story.getRequiredDifficulty().getDisplayName(), SwingConstants.CENTER);
+        difficultyLabel.setFont(new Font("맑은 고딕", Font.BOLD, 13));
         difficultyLabel.setForeground(getDifficultyColor(story.getRequiredDifficulty()));
-        difficultyLabel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+        difficultyPanel.add(difficultyLabel, BorderLayout.CENTER);
 
         item.add(infoPanel, BorderLayout.CENTER);
-        item.add(difficultyLabel, BorderLayout.EAST);
+        item.add(difficultyPanel, BorderLayout.EAST);
 
         // 클릭 이벤트
         item.addMouseListener(new MouseAdapter() {
@@ -256,15 +586,15 @@ public class StorySelectPanel extends JPanel {
             @Override
             public void mouseEntered(MouseEvent e) {
                 if (index != selectedStoryIndex) {
-                    item.setBackground(new Color(60, 60, 100));
+                    item.setCursor(new Cursor(Cursor.HAND_CURSOR));
                 }
+                item.repaint();
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                if (index != selectedStoryIndex) {
-                    item.setBackground(new Color(50, 50, 80));
-                }
+                item.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                item.repaint();
             }
         });
 
