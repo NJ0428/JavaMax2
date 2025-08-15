@@ -355,7 +355,7 @@ public class StorySelectPanel extends JPanel {
      */
     private void createButtons() {
         // 뒤로가기 버튼
-        backButton = createStyledButton("뒤로가기", new Color(80, 80, 120), new Color(100, 100, 140));
+        backButton = createStyledButton("뒤로가기", new Color(50, 50, 80), new Color(70, 70, 100));
         backButton.setBounds(50, 550, 140, 50);
         backButton.addActionListener(e -> {
             if (gameFrame.getAudioManager() != null) {
@@ -366,7 +366,7 @@ public class StorySelectPanel extends JPanel {
         add(backButton);
 
         // 시작 버튼
-        startButton = createStyledButton("스토리 시작", new Color(120, 80, 80), new Color(140, 100, 100));
+        startButton = createStyledButton("스토리 시작", new Color(80, 50, 50), new Color(100, 70, 70));
         startButton.setBounds(790, 550, 140, 50);
         startButton.addActionListener(e -> {
             if (gameFrame.getAudioManager() != null) {
