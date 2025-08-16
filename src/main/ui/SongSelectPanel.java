@@ -386,15 +386,6 @@ public class SongSelectPanel extends JPanel {
         nextButton.setFocusPainted(false);
         nextButton.addActionListener(e -> nextSong());
         add(nextButton);
-
-        // 상위 버튼 (노래 하위 버튼과 같은 역할)
-        JButton upButton = new JButton("노래 상위");
-        upButton.setBounds(850, 50, 120, 30);
-        upButton.setFont(new Font("맑은 고딕", Font.BOLD, 14));
-        upButton.setBackground(new Color(100, 100, 150));
-        upButton.setForeground(Color.WHITE);
-        upButton.setFocusPainted(false);
-        add(upButton);
     }
 
     /**
@@ -420,15 +411,6 @@ public class SongSelectPanel extends JPanel {
         startButton.setFocusPainted(false);
         startButton.addActionListener(e -> startSelectedSong());
         add(startButton);
-
-        // 노래 하위 버튼
-        JButton downButton = new JButton("노래 하위 버튼");
-        downButton.setBounds(Constants.WINDOW_WIDTH / 2 - 100, Constants.WINDOW_HEIGHT - 80, 200, 40);
-        downButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
-        downButton.setBackground(new Color(100, 100, 150));
-        downButton.setForeground(Color.WHITE);
-        downButton.setFocusPainted(false);
-        add(downButton);
     }
 
     /**
