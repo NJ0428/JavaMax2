@@ -355,7 +355,7 @@ public class StorySelectPanel extends JPanel {
      */
     private void createButtons() {
         // 뒤로가기 버튼
-        backButton = createStyledButton("뒤로가기", new Color(50, 50, 80), new Color(70, 70, 100));
+        backButton = createStyledButton("뒤로가기", new Color(30, 50, 100), new Color(50, 70, 120));
         backButton.setBounds(50, 550, 140, 50);
         backButton.addActionListener(e -> {
             if (gameFrame.getAudioManager() != null) {
@@ -366,7 +366,7 @@ public class StorySelectPanel extends JPanel {
         add(backButton);
 
         // 시작 버튼
-        startButton = createStyledButton("스토리 시작", new Color(80, 50, 50), new Color(100, 70, 70));
+        startButton = createStyledButton("스토리 시작", new Color(30, 50, 100), new Color(50, 70, 120));
         startButton.setBounds(790, 550, 140, 50);
         startButton.addActionListener(e -> {
             if (gameFrame.getAudioManager() != null) {
@@ -418,7 +418,7 @@ public class StorySelectPanel extends JPanel {
                 }
 
                 // 텍스트
-                g2d.setColor(isEnabled() ? Color.WHITE : Color.GRAY);
+                g2d.setColor(isEnabled() ? new Color(200, 200, 200) : Color.GRAY);
                 g2d.setFont(new Font("맑은 고딕", Font.BOLD, 16));
                 FontMetrics fm = g2d.getFontMetrics();
                 int textX = (getWidth() - fm.stringWidth(getText())) / 2;
@@ -436,7 +436,7 @@ public class StorySelectPanel extends JPanel {
         };
 
         button.setFont(new Font("맑은 고딕", Font.BOLD, 16));
-        button.setForeground(Color.WHITE);
+        button.setForeground(new Color(200, 200, 200));
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
