@@ -396,8 +396,8 @@ public class SongSelectPanel extends JPanel {
         JButton backButton = new JButton("뒤로가기");
         backButton.setBounds(50, Constants.WINDOW_HEIGHT - 80, 120, 40);
         backButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
-        backButton.setBackground(new Color(100, 100, 150));
-        backButton.setForeground(Color.WHITE);
+        backButton.setBackground(new Color(180, 180, 220));
+        backButton.setForeground(Color.BLACK);
         backButton.setFocusPainted(false);
         backButton.addActionListener(e -> gameFrame.showGameSelectScreen());
         add(backButton);
@@ -406,8 +406,8 @@ public class SongSelectPanel extends JPanel {
         JButton startButton = new JButton("게임 시작");
         startButton.setBounds(Constants.WINDOW_WIDTH - 170, Constants.WINDOW_HEIGHT - 80, 120, 40);
         startButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
-        startButton.setBackground(new Color(200, 100, 100));
-        startButton.setForeground(Color.WHITE);
+        startButton.setBackground(new Color(255, 180, 180));
+        startButton.setForeground(Color.BLACK);
         startButton.setFocusPainted(false);
         startButton.addActionListener(e -> startSelectedSong());
         add(startButton);
