@@ -343,6 +343,7 @@ public class GamePanel extends JPanel {
         }
     }
 
+
     /**
      * 점수 패널을 그립니다
      */

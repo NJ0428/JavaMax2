@@ -449,19 +449,14 @@ public class GameFrame extends JFrame implements KeyListener {
     }
 
     /**
-     * 게임을 재시작합니다
+     * 게임을 재시작합니다 (음악은 계속 재생)
      */
     public void restartGame() {
-        // 현재 게임 모드로 다시 시작
+        // 현재 게임 모드로 다시 시작하되, 음악은 재시작하지 않음
         GameMode currentMode = gameEngine.getCurrentGameMode();
         if (currentMode != null) {
-            gameEngine.startGameWithMode(currentMode);
-
-            // 배경음악 재시작 (루프 없이 한 번만)
-            if (RhythmGame.getInstance() != null && RhythmGame.getInstance().getAudioManager() != null) {
-                System.out.println("게임 재시작 - 기본 배경음악 재생 (루프 없음)");
-                RhythmGame.getInstance().getAudioManager().loadAndPlayBackgroundMusic("game_bgm.wav", false);
-            }
+            // 점수와 노트만 리셋하고 음악은 계속 재생
+            gameEngine.resetGameOnly();
         } else {
             gameEngine.startGame();
         }

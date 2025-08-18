@@ -111,6 +111,21 @@ public class GameEngine {
     }
 
     /**
+     * 음악은 계속 재생하면서 게임 상태만 리셋합니다
+     */
+    public void resetGameOnly() {
+        gameState = GameState.PLAYING;
+        gameStartTime = System.currentTimeMillis();
+        scoreManager.reset();
+        notes.clear();
+        noteSpawnTimer = 0;
+        Arrays.fill(lanePressed, false);
+        
+        // 음악은 재시작하지 않고 계속 재생
+        System.out.println("게임 상태만 리셋됨 - 음악은 계속 재생");
+    }
+
+    /**
      * 게임을 종료합니다
      */
     public void endGame() {
